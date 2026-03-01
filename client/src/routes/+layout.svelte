@@ -18,6 +18,8 @@
 			needsServerUrl = isTauri() && !isServerConfigured();
 		} catch (e) {
 			console.error('Failed to initialize config:', e);
+			// Show server URL prompt as recovery when config fails in Tauri
+			if (isTauri()) needsServerUrl = true;
 		} finally {
 			configReady = true;
 		}
