@@ -62,8 +62,17 @@ pub fn router(state: AppState) -> Router {
             // In dev, allow cross-origin requests for separate dev servers
             CorsLayer::permissive()
         } else {
-            // In release, client is embedded — all requests are same-origin
+            // In release, allow same-origin + Tauri desktop origins
+            use axum::http::{header, Method};
             CorsLayer::new()
+                .allow_origin([
+                    "tauri://localhost".parse().unwrap(),
+                    "https://tauri.localhost".parse().unwrap(),
+                    "http://tauri.localhost".parse().unwrap(),
+                ])
+                .allow_methods([Method::GET, Method::POST, Method::PATCH, Method::DELETE, Method::OPTIONS])
+                .allow_headers([header::CONTENT_TYPE, header::AUTHORIZATION, header::COOKIE])
+                .allow_credentials(true)
         })
         .layer(TraceLayer::new_for_http())
         .with_state(state)

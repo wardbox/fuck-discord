@@ -1,4 +1,5 @@
 import type { AuthResponse, User } from '$lib/protocol/types';
+import { fetchWithAuth } from '$lib/config';
 
 class AuthStore {
 	user = $state<User | null>(null);
@@ -20,7 +21,7 @@ class AuthStore {
 	}
 
 	async register(username: string, password: string, inviteCode: string): Promise<void> {
-		const res = await fetch('/api/auth/register', {
+		const res = await fetchWithAuth('/api/auth/register', {
 			method: 'POST',
 			headers: { 'Content-Type': 'application/json' },
 			body: JSON.stringify({ username, password, invite_code: inviteCode })
@@ -38,7 +39,7 @@ class AuthStore {
 	}
 
 	async login(username: string, password: string): Promise<void> {
-		const res = await fetch('/api/auth/login', {
+		const res = await fetchWithAuth('/api/auth/login', {
 			method: 'POST',
 			headers: { 'Content-Type': 'application/json' },
 			body: JSON.stringify({ username, password })
@@ -56,7 +57,7 @@ class AuthStore {
 	}
 
 	async logout(): Promise<void> {
-		await fetch('/api/auth/logout', { method: 'POST' }).catch(() => {});
+		await fetchWithAuth('/api/auth/logout', { method: 'POST' }).catch(() => {});
 		this.user = null;
 		this.sessionId = null;
 		localStorage.removeItem('relay_session');
@@ -66,7 +67,7 @@ class AuthStore {
 		if (!this.sessionId) return false;
 
 		try {
-			const res = await fetch('/api/auth/me');
+			const res = await fetchWithAuth('/api/auth/me');
 			if (res.ok) {
 				const user: User = await res.json();
 				this.user = user;

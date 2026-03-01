@@ -189,7 +189,7 @@ pub async fn create_invite(
     }
 
     let conn = state.db.get()?;
-    let code = auth::invite::create_invite_code(&conn, &auth_user.0, req.max_uses, None)?;
+    let code = auth::invite::create_invite_code(&conn, Some(&auth_user.0), req.max_uses, None)?;
     Ok(Json(InviteResponse { code }))
 }
 

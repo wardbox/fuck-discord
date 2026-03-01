@@ -15,7 +15,7 @@ fn generate_code() -> String {
 
 pub fn create_invite_code(
     conn: &Connection,
-    created_by: &str,
+    created_by: Option<&str>,
     max_uses: Option<i64>,
     expires_at: Option<&str>,
 ) -> rusqlite::Result<String> {

@@ -1,6 +1,8 @@
 # Rust
 /target/
 server/target/
+src-tauri/target/
+src-tauri/gen/
 **/*.rs.bk
 
 # Node

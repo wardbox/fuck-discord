@@ -1,4 +1,5 @@
 import type { Message, Reaction } from '$lib/protocol/types';
+import { fetchWithAuth } from '$lib/config';
 
 class MessageStore {
 	// channelId -> messages
@@ -79,7 +80,7 @@ class MessageStore {
 		if (before) params.set('before', before);
 
 		try {
-			const res = await fetch(`/api/channels/${channelId}/messages?${params}`);
+			const res = await fetchWithAuth(`/api/channels/${channelId}/messages?${params}`);
 			if (!res.ok) return;
 
 			const messages: Message[] = await res.json();

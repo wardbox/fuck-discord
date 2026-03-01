@@ -5,6 +5,7 @@
 	import { channelStore } from '$lib/stores/channels.svelte';
 	import { formatCompactTimestamp } from '$lib/utils/time';
 	import { X, Search } from 'lucide-svelte';
+	import { fetchWithAuth } from '$lib/config';
 
 	interface Props {
 		onClose: () => void;
@@ -33,7 +34,7 @@
 		error = '';
 
 		try {
-			const res = await fetch(`/api/search?q=${encodeURIComponent(q)}`, { signal: controller.signal });
+			const res = await fetchWithAuth(`/api/search?q=${encodeURIComponent(q)}`, { signal: controller.signal });
 			if (abortController !== controller) return;
 			if (res.ok) {
 				const data = await res.json();

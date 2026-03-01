@@ -4,6 +4,7 @@
 	import { channelStore } from '$lib/stores/channels.svelte';
 	import { messageStore } from '$lib/stores/messages.svelte';
 	import { SendHorizonal, X, Check, Paperclip } from 'lucide-svelte';
+	import { fetchWithAuth } from '$lib/config';
 
 	let content = $state('');
 	let textarea: HTMLTextAreaElement;
@@ -85,7 +86,7 @@
 			const formData = new FormData();
 			formData.append('file', file);
 
-			const res = await fetch('/api/upload', {
+			const res = await fetchWithAuth('/api/upload', {
 				method: 'POST',
 				body: formData
 			});

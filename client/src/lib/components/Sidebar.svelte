@@ -4,6 +4,7 @@
 	import { connection } from '$lib/stores/connection.svelte';
 	import { goto } from '$app/navigation';
 	import { Hash, LogOut, Plus, Wifi, WifiOff, ChevronDown } from 'lucide-svelte';
+	import { fetchWithAuth } from '$lib/config';
 
 	let showCreateChannel = $state(false);
 	let newChannelName = $state('');
@@ -49,7 +50,7 @@
 
 		createError = '';
 		try {
-			const res = await fetch('/api/channels', {
+			const res = await fetchWithAuth('/api/channels', {
 				method: 'POST',
 				headers: { 'Content-Type': 'application/json' },
 				body: JSON.stringify(body)
