@@ -60,7 +60,6 @@ export async function showMessageNotification(
 			body: `${authorUsername}: ${truncated}`
 		});
 	} catch (e) {
-		// Silently fail -- notification errors should never break the app
 		console.warn('Notification error:', e);
 	}
 }

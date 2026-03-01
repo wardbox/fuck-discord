@@ -79,7 +79,12 @@ fn migrate(conn: &Connection) -> rusqlite::Result<()> {
         conn.execute("INSERT OR REPLACE INTO schema_version (version) VALUES (3)", [])?;
     }
 
-    let current = version.max(3);
+    if version < 4 {
+        conn.execute_batch(include_str!("../../migrations/004_invites_nullable_created_by.sql"))?;
+        conn.execute("INSERT OR REPLACE INTO schema_version (version) VALUES (4)", [])?;
+    }
+
+    let current = version.max(4);
     tracing::info!("Database at schema version {current}");
     Ok(())
 }

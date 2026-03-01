@@ -4,10 +4,10 @@
   "version": "0.1.0",
   "identifier": "chat.relay.desktop",
   "build": {
-    "beforeDevCommand": "cd ../client && npm run dev",
-    "beforeBuildCommand": "cd ../client && npm run build",
+    "beforeDevCommand": "cd client && npm run dev",
+    "beforeBuildCommand": "cd client && npm run build",
     "devUrl": "http://localhost:5173",
-    "frontendDist": "../client/build"
+    "frontendDist": "client/build"
   },
   "app": {
     "windows": [
@@ -23,10 +23,5 @@
       "csp": "default-src 'self' 'unsafe-inline' 'unsafe-eval'; connect-src 'self' https: wss: http: ws:; img-src 'self' https: data: blob:; style-src 'self' 'unsafe-inline'"
     }
   },
-  "plugins": {
-    "notification": {
-      "enabled": true
-    },
-    "store": {}
-  }
+  "plugins": {}
 }

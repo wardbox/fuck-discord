@@ -49,7 +49,7 @@ async fn main() -> anyhow::Result<()> {
             let conn = pool.get()?;
             // For CLI invite creation, we need the first user (server owner)
             // or we create a system invite
-            let code = auth::invite::create_invite_code(&conn, "system", max_uses, None)?;
+            let code = auth::invite::create_invite_code(&conn, None, max_uses, None)?;
             println!("Invite code: {code}");
             println!("Share this with someone to let them register.");
             return Ok(());

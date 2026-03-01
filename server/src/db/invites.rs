@@ -3,7 +3,7 @@ use rusqlite::{params, Connection};
 pub fn create_invite(
     conn: &Connection,
     code: &str,
-    created_by: &str,
+    created_by: Option<&str>,
     max_uses: Option<i64>,
     expires_at: Option<&str>,
 ) -> rusqlite::Result<()> {
@@ -28,7 +28,7 @@ pub fn validate_and_use_invite(conn: &Connection, code: &str) -> rusqlite::Resul
 
 pub fn get_all_invites(
     conn: &Connection,
-) -> rusqlite::Result<Vec<(String, String, Option<i64>, i64, Option<String>, String)>> {
+) -> rusqlite::Result<Vec<(String, Option<String>, Option<i64>, i64, Option<String>, String)>> {
     let mut stmt = conn.prepare(
         "SELECT code, created_by, max_uses, uses, expires_at, created_at FROM invites ORDER BY created_at DESC",
     )?;

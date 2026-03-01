@@ -1,6 +1,7 @@
 <script lang="ts">
 	import { channelStore } from '$lib/stores/channels.svelte';
 	import { Hash, Search } from 'lucide-svelte';
+	import { fetchWithAuth } from '$lib/config';
 
 	interface Props {
 		onToggleSearch?: () => void;
@@ -29,7 +30,7 @@
 
 		savingTopic = true;
 		try {
-			const res = await fetch(`/api/channels/${channelId}`, {
+			const res = await fetchWithAuth(`/api/channels/${channelId}`, {
 				method: 'PATCH',
 				headers: { 'Content-Type': 'application/json' },
 				body: JSON.stringify({ topic: newTopic })
