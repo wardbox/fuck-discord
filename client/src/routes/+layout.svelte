@@ -67,10 +67,14 @@
 	}
 
 	async function changeServer() {
-		await clearServerUrl();
-		needsServerUrl = true;
-		serverUrlInput = '';
-		serverUrlError = '';
+		try {
+			await clearServerUrl();
+			needsServerUrl = true;
+			serverUrlInput = '';
+			serverUrlError = '';
+		} catch (e) {
+			console.error('Failed to clear server URL:', e);
+		}
 	}
 </script>
 
