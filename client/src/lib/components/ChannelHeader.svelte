@@ -10,6 +10,7 @@
 
 	let editingTopic = $state(false);
 	let topicInput = $state('');
+	let savingTopic = $state(false);
 
 	function startEditTopic() {
 		topicInput = channelStore.activeChannel?.topic ?? '';
@@ -17,20 +18,26 @@
 	}
 
 	async function saveTopic() {
-		if (!channelStore.activeChannel) return;
+		if (!channelStore.activeChannel || savingTopic) return;
 		const newTopic = topicInput.trim() || null;
 		if (newTopic === (channelStore.activeChannel.topic ?? null)) {
 			editingTopic = false;
 			return;
 		}
 
-		const res = await fetch(`/api/channels/${channelStore.activeChannel.id}`, {
-			method: 'PATCH',
-			headers: { 'Content-Type': 'application/json' },
-			body: JSON.stringify({ topic: newTopic })
-		});
-		if (res.ok) {
-			editingTopic = false;
+		savingTopic = true;
+		try {
+			const res = await fetch(`/api/channels/${channelStore.activeChannel.id}`, {
+				method: 'PATCH',
+				headers: { 'Content-Type': 'application/json' },
+				body: JSON.stringify({ topic: newTopic })
+			});
+			if (res.ok) {
+				channelStore.updateChannel({ ...channelStore.activeChannel, topic: newTopic });
+				editingTopic = false;
+			}
+		} finally {
+			savingTopic = false;
 		}
 	}
 

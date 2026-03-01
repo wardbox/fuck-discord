@@ -158,9 +158,16 @@ impl TestClient {
             .await
             .unwrap();
         if res.status() == 200 {
-            // We need to clone the body to read it, but since cookies are handled automatically,
-            // we just need to extract session_id from the JSON
-            // Actually reqwest cookie_store handles Set-Cookie automatically
+            self.session_id = res
+                .headers()
+                .get(reqwest::header::SET_COOKIE)
+                .and_then(|h| h.to_str().ok())
+                .and_then(|cookie| {
+                    cookie
+                        .split(';')
+                        .find_map(|p| p.trim().strip_prefix("relay_session="))
+                })
+                .map(str::to_string);
         }
         res
     }

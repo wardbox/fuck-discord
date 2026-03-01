@@ -66,6 +66,11 @@ pub fn router(state: AppState) -> Router {
 async fn serve_client(uri: axum::http::Uri) -> impl IntoResponse {
     let path = uri.path().trim_start_matches('/');
 
+    // Don't serve index.html for API, WS, or upload paths
+    if path == "api" || path.starts_with("api/") || path == "ws" || path.starts_with("uploads/") {
+        return axum::http::StatusCode::NOT_FOUND.into_response();
+    }
+
     // Try to serve the exact file
     if let Some(file) = ClientAssets::get(path) {
         let mime = mime_guess::from_path(path)

@@ -30,9 +30,6 @@ async fn two_users_see_each_others_messages() {
     let mut bob_ws = WsClient::connect(&server).await;
     bob_ws.authenticate(bob_session).await;
 
-    // Small delay for broadcast subscriptions to settle
-    tokio::time::sleep(std::time::Duration::from_millis(200)).await;
-
     // Alice sends a message
     alice_ws
         .send_message(channel_id, "Hello from Alice!")
@@ -90,8 +87,6 @@ async fn typing_indicator_broadcasts_to_others() {
     let mut bob_ws = WsClient::connect(&server).await;
     bob_ws.authenticate(bob_session).await;
 
-    tokio::time::sleep(std::time::Duration::from_millis(200)).await;
-
     // Alice starts typing
     alice_ws.send_typing(channel_id).await;
 
@@ -126,8 +121,6 @@ async fn presence_online_on_connect() {
     let mut alice_ws = WsClient::connect(&server).await;
     alice_ws.authenticate(alice_session).await;
 
-    tokio::time::sleep(std::time::Duration::from_millis(200)).await;
-
     // Bob connects — Alice should get presence_update "online"
     let mut bob_ws = WsClient::connect(&server).await;
     bob_ws.authenticate(bob_session).await;
@@ -136,6 +129,9 @@ async fn presence_online_on_connect() {
     assert!(presence.is_some(), "Alice should see Bob come online");
     let presence = presence.unwrap();
     assert_eq!(presence["status"], "online");
+
+    // Keep bob_ws alive so the connection isn't dropped
+    let _ = &bob_ws;
 }
 
 #[tokio::test]
@@ -187,8 +183,6 @@ async fn new_channel_broadcasts_to_connected_clients() {
     let mut alice_ws = WsClient::connect(&server).await;
     alice_ws.authenticate(alice_session).await;
 
-    tokio::time::sleep(std::time::Duration::from_millis(200)).await;
-
     // Create channel via REST
     alice_http.create_channel("new-channel", None).await;
 
@@ -227,8 +221,6 @@ async fn reactions_broadcast_to_channel() {
     let mut bob_ws = WsClient::connect(&server).await;
     bob_ws.authenticate(bob_session).await;
 
-    tokio::time::sleep(std::time::Duration::from_millis(200)).await;
-
     // Alice sends a message
     alice_ws.send_message(channel_id, "react to this!").await;
     let create = alice_ws.recv_type("message_create").await.unwrap();
@@ -246,12 +238,22 @@ async fn reactions_broadcast_to_channel() {
         alice_reaction.is_some(),
         "Alice should see the reaction update"
     );
+
+    let bob_reaction = bob_ws.recv_type("reaction_update").await;
+    assert!(
+        bob_reaction.is_some(),
+        "Bob should see the reaction update"
+    );
+
     let alice_reaction = alice_reaction.unwrap();
     assert_eq!(alice_reaction["message_id"], message_id);
     let reactions = alice_reaction["reactions"].as_array().unwrap();
     assert_eq!(reactions.len(), 1);
     assert_eq!(reactions[0]["emoji"], "👍");
     assert_eq!(reactions[0]["count"], 1);
+
+    let bob_reaction = bob_reaction.unwrap();
+    assert_eq!(bob_reaction["message_id"], message_id);
 }
 
 #[tokio::test]
@@ -276,8 +278,6 @@ async fn messages_in_new_channel_broadcast_correctly() {
 
     let mut bob_ws = WsClient::connect(&server).await;
     bob_ws.authenticate(bob_session).await;
-
-    tokio::time::sleep(std::time::Duration::from_millis(200)).await;
 
     // Create a new channel AFTER connections are established
     let new_channel = alice_http
@@ -334,8 +334,6 @@ async fn set_status_via_ws() {
 
     let mut bob_ws = WsClient::connect(&server).await;
     bob_ws.authenticate(bob_session).await;
-
-    tokio::time::sleep(std::time::Duration::from_millis(200)).await;
 
     // Alice sets status to idle
     alice_ws

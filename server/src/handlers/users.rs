@@ -30,9 +30,15 @@ pub async fn update_me(
     let conn = state.db.get()?;
 
     if let Some(display_name) = &req.display_name {
+        let trimmed = display_name.trim();
+        if trimmed.is_empty() || trimmed.len() > 64 {
+            return Err(AppError::BadRequest(
+                "Display name must be 1-64 characters".to_string(),
+            ));
+        }
         conn.execute(
             "UPDATE users SET display_name = ?1, updated_at = datetime('now') WHERE id = ?2",
-            rusqlite::params![display_name, auth_user.0],
+            rusqlite::params![trimmed, auth_user.0],
         )?;
     }
 

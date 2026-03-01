@@ -10,9 +10,9 @@ class MemberStore {
 		this.members = members;
 	}
 
-	updatePresence(userId: string, status: string) {
+	updatePresence(userId: string, status: User['status']) {
 		this.members = this.members.map((m) =>
-			m.id === userId ? { ...m, status: status as User['status'] } : m
+			m.id === userId ? { ...m, status } : m
 		);
 	}
 

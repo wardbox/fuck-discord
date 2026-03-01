@@ -70,8 +70,11 @@
 
 	async function handleLogout() {
 		connection.disconnect();
-		await auth.logout();
-		goto('/');
+		try {
+			await auth.logout();
+		} finally {
+			goto('/');
+		}
 	}
 </script>
 

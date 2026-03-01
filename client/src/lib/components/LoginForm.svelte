@@ -11,6 +11,7 @@
 
 	async function handleSubmit(e: Event) {
 		e.preventDefault();
+		if (loading) return;
 		error = '';
 		loading = true;
 

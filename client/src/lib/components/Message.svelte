@@ -81,6 +81,9 @@
 	{#if reactions.length > 0}
 		<div class="ml-[4.5rem] flex flex-wrap gap-1 pb-0.5">
 			{#each reactions as reaction}
+				<!-- TODO: reaction.users contains user IDs, not display names.
+					 Resolving IDs to usernames requires a lookup against the member store.
+					 This is a known limitation — tracked for a future PR. -->
 				<button
 					onclick={() => toggleReaction(reaction.emoji)}
 					class="flex items-center gap-1 rounded-full border px-1.5 py-0.5 text-xs

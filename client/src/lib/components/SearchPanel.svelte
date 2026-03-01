@@ -13,6 +13,7 @@
 	let results = $state<MessageType[]>([]);
 	let searching = $state(false);
 	let searched = $state(false);
+	let error = $state('');
 
 	async function handleSearch(e: Event) {
 		e.preventDefault();
@@ -21,12 +22,19 @@
 
 		searching = true;
 		searched = true;
+		error = '';
 
 		try {
 			const res = await fetch(`/api/search?q=${encodeURIComponent(q)}`);
 			if (res.ok) {
 				results = await res.json();
+			} else {
+				results = [];
+				error = `Search failed (${res.status})`;
 			}
+		} catch {
+			results = [];
+			error = 'Network error — could not reach server.';
 		} finally {
 			searching = false;
 		}
@@ -50,7 +58,7 @@
 				class="min-w-0 flex-1 rounded border border-border bg-bg-input px-2 py-1.5 text-sm text-text-primary placeholder-text-muted focus:border-accent focus:outline-none"
 				autofocus
 			/>
-			<button type="submit" disabled={searching} class="rounded bg-accent px-2 py-1.5 text-white hover:bg-accent-hover disabled:opacity-50">
+			<button type="submit" disabled={searching} class="rounded bg-accent px-2 py-1.5 text-white hover:bg-accent-hover disabled:opacity-50" aria-label="Search">
 				<Search size={14} />
 			</button>
 		</div>
@@ -59,6 +67,8 @@
 	<div class="flex-1 overflow-y-auto">
 		{#if searching}
 			<div class="p-4 text-center text-sm text-text-muted">Searching...</div>
+		{:else if error}
+			<div class="p-4 text-center text-sm text-danger">{error}</div>
 		{:else if searched && results.length === 0}
 			<div class="p-4 text-center text-sm text-text-muted">No results found.</div>
 		{:else}

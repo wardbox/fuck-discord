@@ -12,7 +12,11 @@ use crate::error::{AppError, AppResult};
 use crate::state::AppState;
 
 const MAX_FILE_SIZE: usize = 10 * 1024 * 1024; // 10MB
-const ALLOWED_IMAGE_TYPES: &[&str] = &["image/png", "image/jpeg", "image/gif", "image/webp"];
+const ALLOWED_EXTENSIONS: &[&str] = &[
+    "png", "jpg", "jpeg", "gif", "webp", "svg",
+    "txt", "pdf", "zip", "gz", "tar",
+    "mp3", "mp4", "webm", "ogg",
+];
 
 #[derive(Serialize)]
 pub struct UploadResponse {
@@ -54,12 +58,23 @@ pub async fn upload_file(
             )));
         }
 
-        // Generate unique filename
+        // Validate file extension
         let ext = PathBuf::from(&filename)
             .extension()
-            .map(|e| format!(".{}", e.to_string_lossy()))
+            .map(|e| e.to_string_lossy().to_lowercase())
             .unwrap_or_default();
-        let unique_name = format!("{}{}", ulid::Ulid::new(), ext);
+        if !ext.is_empty() && !ALLOWED_EXTENSIONS.contains(&ext.as_str()) {
+            return Err(AppError::BadRequest(format!(
+                "File type .{ext} not allowed"
+            )));
+        }
+
+        let ext_dot = if ext.is_empty() {
+            String::new()
+        } else {
+            format!(".{ext}")
+        };
+        let unique_name = format!("{}{}", ulid::Ulid::new(), ext_dot);
 
         // Save file
         let file_path = state.uploads_dir.join(&unique_name);
@@ -94,12 +109,28 @@ pub async fn serve_upload(
                 .first_or_octet_stream()
                 .to_string();
 
+            // Force download for non-image types to prevent stored XSS
+            let is_image = content_type.starts_with("image/") && content_type != "image/svg+xml";
+            let disposition = if is_image {
+                "inline".to_string()
+            } else {
+                format!("attachment; filename=\"{}\"", filename)
+            };
+
             (
                 [
                     (header::CONTENT_TYPE, content_type),
                     (
                         header::CACHE_CONTROL,
                         "public, max-age=31536000, immutable".to_string(),
+                    ),
+                    (
+                        header::X_CONTENT_TYPE_OPTIONS,
+                        "nosniff".to_string(),
+                    ),
+                    (
+                        header::CONTENT_DISPOSITION,
+                        disposition,
                     ),
                 ],
                 data,

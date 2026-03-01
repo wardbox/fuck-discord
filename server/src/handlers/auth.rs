@@ -48,43 +48,53 @@ pub async fn register(
 
     let conn = state.db.get()?;
 
-    // Validate invite
-    if !db::invites::validate_and_use_invite(&conn, &req.invite_code)? {
-        return Err(AppError::BadRequest("Invalid or expired invite code".to_string()));
-    }
-
-    // Check username uniqueness
+    // Fast-fail: check username uniqueness (outside transaction is fine)
     if db::users::get_user_by_username(&conn, username)?.is_some() {
         return Err(AppError::Conflict("Username already taken".to_string()));
     }
 
-    // Hash password
+    // Hash password (expensive, do outside transaction)
     let password_hash = auth::password::hash_password(&req.password)
         .map_err(|e| AppError::Internal(format!("Password hashing failed: {e}")))?;
 
+    // Start transaction for invite validation + user creation + channel joins + session
+    let tx = conn.unchecked_transaction().map_err(|e| {
+        AppError::Internal(format!("Transaction start failed: {e}"))
+    })?;
+
+    // Validate and use invite inside transaction
+    if !db::invites::validate_and_use_invite(&tx, &req.invite_code)? {
+        return Err(AppError::BadRequest("Invalid or expired invite code".to_string()));
+    }
+
     // Create user
     let user_id = ulid::Ulid::new().to_string();
-    let user = db::users::create_user(&conn, &user_id, username, &password_hash)?;
+    let user = db::users::create_user(&tx, &user_id, username, &password_hash)?;
 
     // Auto-join all channels
-    let channels = db::channels::get_all_channels(&conn)?;
+    let channels = db::channels::get_all_channels(&tx)?;
     for channel in &channels {
-        conn.execute(
+        tx.execute(
             "INSERT OR IGNORE INTO channel_members (channel_id, user_id) VALUES (?1, ?2)",
             rusqlite::params![channel.id, user_id],
         )?;
     }
 
     // Create session
-    let session_id = auth::session::create_session(&conn, &user_id)?;
+    let session_id = auth::session::create_session(&tx, &user_id)?;
+
+    tx.commit().map_err(|e| {
+        AppError::Internal(format!("Transaction commit failed: {e}"))
+    })?;
 
     let response = AuthResponse {
         user,
         session_id: session_id.clone(),
     };
 
+    let secure_attr = if cfg!(debug_assertions) { "" } else { "; Secure" };
     let cookie = format!(
-        "relay_session={session_id}; Path=/; HttpOnly; SameSite=Lax; Max-Age={}",
+        "relay_session={session_id}; Path=/; HttpOnly; SameSite=Lax; Max-Age={}{secure_attr}",
         30 * 24 * 60 * 60 // 30 days
     );
 
@@ -118,8 +128,9 @@ pub async fn login(
         session_id: session_id.clone(),
     };
 
+    let secure_attr = if cfg!(debug_assertions) { "" } else { "; Secure" };
     let cookie = format!(
-        "relay_session={session_id}; Path=/; HttpOnly; SameSite=Lax; Max-Age={}",
+        "relay_session={session_id}; Path=/; HttpOnly; SameSite=Lax; Max-Age={}{secure_attr}",
         30 * 24 * 60 * 60
     );
 
@@ -139,10 +150,13 @@ pub async fn logout(
         auth::session::delete_session(&conn, &session_id)?;
     }
 
-    let cookie = "relay_session=; Path=/; HttpOnly; SameSite=Lax; Max-Age=0";
+    let secure_attr = if cfg!(debug_assertions) { "" } else { "; Secure" };
+    let cookie = format!(
+        "relay_session=; Path=/; HttpOnly; SameSite=Lax; Max-Age=0{secure_attr}"
+    );
 
     Ok((
-        [(SET_COOKIE, cookie.to_string())],
+        [(SET_COOKIE, cookie)],
         Json(serde_json::json!({"ok": true})),
     )
         .into_response())
@@ -173,6 +187,15 @@ pub async fn create_invite(
     Extension(auth_user): Extension<AuthUser>,
     Json(req): Json<CreateInviteRequest>,
 ) -> AppResult<Json<InviteResponse>> {
+    // Validate max_uses if provided
+    if let Some(max_uses) = req.max_uses {
+        if max_uses <= 0 {
+            return Err(AppError::BadRequest(
+                "max_uses must be greater than 0".to_string(),
+            ));
+        }
+    }
+
     let conn = state.db.get()?;
     let code = auth::invite::create_invite_code(&conn, &auth_user.0, req.max_uses, None)?;
     Ok(Json(InviteResponse { code }))

@@ -10,6 +10,13 @@ class MessageStore {
 	// Currently editing message
 	editingMessage = $state<Message | null>(null);
 
+	reset() {
+		this.messagesByChannel = {};
+		this.hasMore = {};
+		this.loadedChannels.clear();
+		this.editingMessage = null;
+	}
+
 	startEditing(message: Message) {
 		this.editingMessage = message;
 	}
@@ -71,18 +78,23 @@ class MessageStore {
 		const params = new URLSearchParams({ limit: '50' });
 		if (before) params.set('before', before);
 
-		const res = await fetch(`/api/channels/${channelId}/messages?${params}`);
-		if (!res.ok) return;
+		try {
+			const res = await fetch(`/api/channels/${channelId}/messages?${params}`);
+			if (!res.ok) return;
 
-		const messages: Message[] = await res.json();
-		if (!before) {
-			this.messagesByChannel[channelId] = messages;
-			this.loadedChannels.add(channelId);
-			if (messages.length < 50) {
-				this.hasMore[channelId] = false;
+			const messages: Message[] = await res.json();
+			if (!before) {
+				this.messagesByChannel[channelId] = messages;
+				this.loadedChannels.add(channelId);
+				if (messages.length < 50) {
+					this.hasMore[channelId] = false;
+				}
+			} else {
+				this.prependMessages(channelId, messages);
 			}
-		} else {
-			this.prependMessages(channelId, messages);
+		} catch {
+			// Network error — silently return so the UI can retry later
+			return;
 		}
 	}
 }

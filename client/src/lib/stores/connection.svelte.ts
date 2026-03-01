@@ -11,6 +11,7 @@ class ConnectionStore {
 	private idleTimer: ReturnType<typeof setTimeout> | null = null;
 	private isIdle = false;
 	private activityHandler: (() => void) | null = null;
+	private authRejected = false;
 
 	connected = $state(false);
 	connecting = $state(false);
@@ -33,6 +34,7 @@ class ConnectionStore {
 		this.ws.onopen = () => {
 			this.connecting = false;
 			this.reconnectDelay = 1000;
+			this.authRejected = false;
 			// Authenticate
 			this.send({ type: 'authenticate', token: auth.sessionId! });
 		};
@@ -50,7 +52,7 @@ class ConnectionStore {
 			this.ws = null;
 			this.connected = false;
 			this.connecting = false;
-			if (auth.isAuthenticated) {
+			if (auth.isAuthenticated && !this.authRejected) {
 				this.scheduleReconnect();
 			}
 		};
@@ -92,7 +94,7 @@ class ConnectionStore {
 
 		this.activityHandler = resetIdle;
 		const events = ['mousedown', 'keydown', 'scroll', 'touchstart'] as const;
-		events.forEach((e) => document.addEventListener(e, resetIdle, { passive: true }));
+		events.forEach((e) => { document.addEventListener(e, resetIdle, { passive: true }); });
 		resetIdle();
 	}
 
@@ -103,7 +105,7 @@ class ConnectionStore {
 		}
 		if (this.activityHandler) {
 			const events = ['mousedown', 'keydown', 'scroll', 'touchstart'] as const;
-			events.forEach((e) => document.removeEventListener(e, this.activityHandler!));
+			events.forEach((e) => { document.removeEventListener(e, this.activityHandler!); });
 			this.activityHandler = null;
 		}
 		this.isIdle = false;
@@ -204,6 +206,10 @@ class ConnectionStore {
 
 			case 'error':
 				console.error('Server error:', msg.code, msg.message);
+				if (msg.code === 'auth_failed') {
+					this.authRejected = true;
+					this.disconnect();
+				}
 				break;
 		}
 	}

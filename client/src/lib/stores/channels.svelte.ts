@@ -29,7 +29,9 @@ class ChannelStore {
 		const latest = this.latestMessageId[channelId];
 		if (latest) {
 			this.lastReadId = { ...this.lastReadId, [channelId]: latest };
-			localStorage.setItem('relay_last_read', JSON.stringify(this.lastReadId));
+			try {
+				localStorage.setItem('relay_last_read', JSON.stringify(this.lastReadId));
+			} catch { /* localStorage may be full or unavailable */ }
 		}
 	}
 
@@ -46,8 +48,9 @@ class ChannelStore {
 
 	setChannels(channels: Channel[]) {
 		this.channels = channels;
-		if (!this.activeChannelId && channels.length > 0) {
-			this.activeChannelId = channels[0].id;
+		const hasActive = this.activeChannelId !== null && channels.some((c) => c.id === this.activeChannelId);
+		if (!hasActive) {
+			this.activeChannelId = channels[0]?.id ?? null;
 		}
 	}
 

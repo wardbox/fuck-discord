@@ -73,7 +73,13 @@ async fn handle_socket(socket: WebSocket, state: AppState) {
 
     // Set user online
     {
-        let conn = state.db.get().unwrap();
+        let conn = match state.db.get() {
+            Ok(c) => c,
+            Err(e) => {
+                tracing::error!("DB error setting user online: {e}");
+                return;
+            }
+        };
         let _ = db::users::update_status(&conn, &user_id, "online");
     }
 
@@ -81,9 +87,22 @@ async fn handle_socket(socket: WebSocket, state: AppState) {
     let (user, channels, members) = {
         let conn = match state.db.get() {
             Ok(c) => c,
-            Err(_) => return,
+            Err(e) => {
+                tracing::error!("DB error fetching initial state: {e}");
+                return;
+            }
         };
-        let user = db::users::get_user_by_id(&conn, &user_id).unwrap().unwrap();
+        let user = match db::users::get_user_by_id(&conn, &user_id) {
+            Ok(Some(u)) => u,
+            Ok(None) => {
+                tracing::error!("User {user_id} not found after auth");
+                return;
+            }
+            Err(e) => {
+                tracing::error!("DB error fetching user: {e}");
+                return;
+            }
+        };
         let channels = db::channels::get_all_channels(&conn).unwrap_or_default();
         let members = db::users::get_all_users(&conn).unwrap_or_default();
         (user, channels, members)
@@ -136,8 +155,11 @@ async fn handle_socket(socket: WebSocket, state: AppState) {
                 while let Ok(msg) = rx.try_recv() {
                     // Dynamically subscribe to newly created channels
                     if let ServerMessage::ChannelCreate { ref channel } = msg {
-                        let tx = listen_state.get_or_create_broadcast(&channel.id).await;
-                        new_subs.push((channel.id.clone(), tx.subscribe()));
+                        if !subscribed.contains(&channel.id) {
+                            let tx = listen_state.get_or_create_broadcast(&channel.id).await;
+                            new_subs.push((channel.id.clone(), tx.subscribe()));
+                            subscribed.insert(channel.id.clone());
+                        }
                     }
                     if outgoing_tx_clone.send(msg).await.is_err() {
                         return;
@@ -197,8 +219,14 @@ async fn handle_socket(socket: WebSocket, state: AppState) {
 
     // Set user offline
     {
-        let conn = state.db.get().unwrap();
-        let _ = db::users::update_status(&conn, &user_id, "offline");
+        match state.db.get() {
+            Ok(conn) => {
+                let _ = db::users::update_status(&conn, &user_id, "offline");
+            }
+            Err(e) => {
+                tracing::error!("DB error setting user offline: {e}");
+            }
+        }
     }
 
     // Broadcast offline presence
@@ -376,13 +404,18 @@ async fn handle_client_message(
     }
 }
 
+/// Broadcast a message to all channels. Deduplicates by channel ID to avoid
+/// sending the same message multiple times through shared broadcast senders.
 async fn broadcast_to_all_channels(
     state: &AppState,
     channels: &[db::channels::Channel],
     msg: &ServerMessage,
 ) {
+    let mut seen = HashSet::new();
     for channel in channels {
-        let tx = state.get_or_create_broadcast(&channel.id).await;
-        let _ = tx.send(msg.clone());
+        if seen.insert(&channel.id) {
+            let tx = state.get_or_create_broadcast(&channel.id).await;
+            let _ = tx.send(msg.clone());
+        }
     }
 }

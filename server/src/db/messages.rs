@@ -35,21 +35,25 @@ pub fn create_message(
     author_id: &str,
     content: &str,
 ) -> rusqlite::Result<Message> {
-    conn.execute(
+    let tx = conn.unchecked_transaction()?;
+
+    tx.execute(
         "INSERT INTO messages (id, channel_id, author_id, content) VALUES (?1, ?2, ?3, ?4)",
         params![id, channel_id, author_id, content],
     )?;
 
     // Insert into FTS index
-    let rowid: i64 = conn.query_row(
+    let rowid: i64 = tx.query_row(
         "SELECT rowid FROM messages WHERE id = ?1",
         params![id],
         |row| row.get(0),
     )?;
-    conn.execute(
+    tx.execute(
         "INSERT INTO messages_fts(rowid, content) VALUES (?1, ?2)",
         params![rowid, content],
     )?;
+
+    tx.commit()?;
 
     get_message_by_id(conn, id)?.ok_or(rusqlite::Error::QueryReturnedNoRows)
 }
@@ -126,7 +130,9 @@ pub fn edit_message(
     message_id: &str,
     content: &str,
 ) -> rusqlite::Result<Option<Message>> {
-    let rows = conn.execute(
+    let tx = conn.unchecked_transaction()?;
+
+    let rows = tx.execute(
         "UPDATE messages SET content = ?1, edited_at = datetime('now') WHERE id = ?2",
         params![content, message_id],
     )?;
@@ -135,37 +141,44 @@ pub fn edit_message(
     }
 
     // Update FTS
-    let rowid: i64 = conn.query_row(
+    let rowid: i64 = tx.query_row(
         "SELECT rowid FROM messages WHERE id = ?1",
         params![message_id],
         |row| row.get(0),
     )?;
     // Delete old FTS entry and insert new one
-    conn.execute(
+    tx.execute(
         "DELETE FROM messages_fts WHERE rowid = ?1",
         params![rowid],
-    ).ok();
-    conn.execute(
+    )?;
+    tx.execute(
         "INSERT INTO messages_fts(rowid, content) VALUES (?1, ?2)",
         params![rowid, content],
     )?;
+
+    tx.commit()?;
 
     get_message_by_id(conn, message_id)
 }
 
 pub fn delete_message(conn: &Connection, message_id: &str) -> rusqlite::Result<bool> {
+    let tx = conn.unchecked_transaction()?;
+
     // Delete from FTS first
-    if let Ok(rowid) = conn.query_row::<i64, _, _>(
+    if let Ok(rowid) = tx.query_row::<i64, _, _>(
         "SELECT rowid FROM messages WHERE id = ?1",
         params![message_id],
         |row| row.get(0),
     ) {
-        conn.execute(
+        tx.execute(
             "DELETE FROM messages_fts WHERE rowid = ?1",
             params![rowid],
-        ).ok();
+        )?;
     }
 
-    let rows = conn.execute("DELETE FROM messages WHERE id = ?1", params![message_id])?;
+    let rows = tx.execute("DELETE FROM messages WHERE id = ?1", params![message_id])?;
+
+    tx.commit()?;
+
     Ok(rows > 0)
 }

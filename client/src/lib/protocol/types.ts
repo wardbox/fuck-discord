@@ -58,7 +58,7 @@ export type ServerMessage =
 	| { type: 'message_update'; message: Message }
 	| { type: 'message_delete'; channel_id: string; message_id: string }
 	| { type: 'typing_start'; channel_id: string; user_id: string; username: string }
-	| { type: 'presence_update'; user_id: string; status: string }
+	| { type: 'presence_update'; user_id: string; status: 'online' | 'idle' | 'dnd' | 'offline' }
 	| { type: 'channel_create'; channel: Channel }
 	| { type: 'channel_update'; channel: Channel }
 	| { type: 'channel_delete'; channel_id: string }

@@ -117,13 +117,17 @@ pub async fn delete_channel(
 ) -> AppResult<Json<serde_json::Value>> {
     let conn = state.db.get()?;
 
+    // Broadcast to the deleted channel's broadcaster *before* removing it,
+    // so connected clients on that channel receive the deletion event.
+    // Also broadcast to all other channels so all clients are notified.
+    let channels_before_delete = db::channels::get_all_channels(&conn)?;
+
     if !db::channels::delete_channel(&conn, &channel_id)? {
         return Err(AppError::NotFound);
     }
 
-    // Broadcast channel deletion
-    let channels = db::channels::get_all_channels(&conn)?;
-    for ch in &channels {
+    // Broadcast channel deletion to all channels (including the deleted one's broadcaster)
+    for ch in &channels_before_delete {
         let tx = state.get_or_create_broadcast(&ch.id).await;
         let _ = tx.send(crate::ws::protocol::ServerMessage::ChannelDelete {
             channel_id: channel_id.clone(),

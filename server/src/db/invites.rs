@@ -15,46 +15,15 @@ pub fn create_invite(
 }
 
 pub fn validate_and_use_invite(conn: &Connection, code: &str) -> rusqlite::Result<bool> {
-    // Check if invite exists and is valid
-    let result = conn.query_row(
-        "SELECT max_uses, uses, expires_at FROM invites WHERE code = ?1",
-        params![code],
-        |row| {
-            let max_uses: Option<i64> = row.get(0)?;
-            let uses: i64 = row.get(1)?;
-            let expires_at: Option<String> = row.get(2)?;
-            Ok((max_uses, uses, expires_at))
-        },
-    );
-
-    match result {
-        Ok((max_uses, uses, expires_at)) => {
-            // Check if expired
-            if let Some(exp) = expires_at {
-                let now = chrono::Utc::now().format("%Y-%m-%d %H:%M:%S").to_string();
-                if now > exp {
-                    return Ok(false);
-                }
-            }
-
-            // Check if max uses reached
-            if let Some(max) = max_uses {
-                if uses >= max {
-                    return Ok(false);
-                }
-            }
-
-            // Increment uses
-            conn.execute(
-                "UPDATE invites SET uses = uses + 1 WHERE code = ?1",
-                params![code],
-            )?;
-
-            Ok(true)
-        }
-        Err(rusqlite::Error::QueryReturnedNoRows) => Ok(false),
-        Err(e) => Err(e),
-    }
+    let now = chrono::Utc::now().format("%Y-%m-%d %H:%M:%S").to_string();
+    let affected = conn.execute(
+        "UPDATE invites SET uses = uses + 1
+         WHERE code = ?1
+           AND (max_uses IS NULL OR uses < max_uses)
+           AND (expires_at IS NULL OR expires_at > ?2)",
+        params![code, now],
+    )?;
+    Ok(affected > 0)
 }
 
 pub fn get_all_invites(

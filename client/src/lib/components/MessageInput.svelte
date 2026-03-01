@@ -1,4 +1,5 @@
 <script lang="ts">
+	import { onDestroy } from 'svelte';
 	import { connection } from '$lib/stores/connection.svelte';
 	import { channelStore } from '$lib/stores/channels.svelte';
 	import { messageStore } from '$lib/stores/messages.svelte';
@@ -8,7 +9,15 @@
 	let textarea: HTMLTextAreaElement;
 	let fileInput: HTMLInputElement;
 	let uploading = $state(false);
+	let uploadError = $state('');
 	let typingTimeout: ReturnType<typeof setTimeout> | null = null;
+
+	onDestroy(() => {
+		if (typingTimeout) {
+			clearTimeout(typingTimeout);
+			typingTimeout = null;
+		}
+	});
 
 	let editing = $derived(messageStore.editingMessage);
 
@@ -71,6 +80,7 @@
 		if (!file || !channelStore.activeChannelId) return;
 
 		uploading = true;
+		uploadError = '';
 		try {
 			const formData = new FormData();
 			formData.append('file', file);
@@ -92,9 +102,12 @@
 					content = markdown;
 				}
 				textarea?.focus();
+			} else {
+				uploadError = `Upload failed (${res.status})`;
 			}
 		} catch (e) {
 			console.error('Upload failed:', e);
+			uploadError = 'Upload failed — network error.';
 		} finally {
 			uploading = false;
 			if (fileInput) fileInput.value = '';
@@ -123,6 +136,14 @@
 	ondragover={handleDragOver}
 	class="border-t border-border px-4 py-3"
 >
+	{#if uploadError}
+		<div class="mb-1.5 flex items-center gap-2 text-xs text-danger">
+			<span>{uploadError}</span>
+			<button type="button" onclick={() => { uploadError = ''; }} class="text-danger hover:text-text-primary">
+				dismiss
+			</button>
+		</div>
+	{/if}
 	{#if editing}
 		<div class="mb-1.5 flex items-center gap-2 text-xs text-text-muted">
 			<span>Editing message</span>

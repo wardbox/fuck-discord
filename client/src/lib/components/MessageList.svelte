@@ -92,7 +92,7 @@
 			{@const isGrouped = prevMessage
 				&& prevMessage.author_id === message.author_id
 				&& new Date(message.created_at).getTime() - new Date(prevMessage.created_at).getTime() < 300000}
-			<Message {message} compact={isGrouped} />
+			<Message {message} compact={isGrouped ?? false} />
 		{/each}
 	{/if}
 

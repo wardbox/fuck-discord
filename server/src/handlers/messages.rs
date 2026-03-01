@@ -22,7 +22,7 @@ pub async fn get_messages(
     Query(query): Query<MessageQuery>,
 ) -> AppResult<Json<serde_json::Value>> {
     let conn = state.db.get()?;
-    let limit = query.limit.unwrap_or(50).min(100);
+    let limit = query.limit.unwrap_or(50).clamp(1, 100);
     let messages =
         db::messages::get_channel_messages(&conn, &channel_id, query.before.as_deref(), limit)?;
 
@@ -66,23 +66,34 @@ pub async fn search(
     }
 
     let conn = state.db.get()?;
-    let limit = query.limit.unwrap_or(25).min(100);
+    let limit = query.limit.unwrap_or(25).clamp(1, 100);
 
     // Transform query for FTS5 prefix matching: "test" → "\"test\"*"
     // This makes "test" match "test", "testing", "tests", etc.
-    let fts_query = query
+    let tokens: Vec<String> = query
         .q
         .trim()
         .split_whitespace()
-        .map(|word| {
+        .filter_map(|word| {
             let clean: String = word
                 .chars()
                 .filter(|c| c.is_alphanumeric() || *c == '_')
                 .collect();
-            format!("\"{}\"*", clean)
+            if clean.is_empty() {
+                None
+            } else {
+                Some(format!("\"{}\"*", clean))
+            }
         })
-        .collect::<Vec<_>>()
-        .join(" ");
+        .collect();
+
+    if tokens.is_empty() {
+        return Err(crate::error::AppError::BadRequest(
+            "Search query contains no valid tokens".to_string(),
+        ));
+    }
+
+    let fts_query = tokens.join(" ");
 
     let messages =
         db::messages::search_messages(&conn, &fts_query, query.channel_id.as_deref(), limit)?;
