@@ -20,17 +20,17 @@ Progress: [██████████] 100%
 
 **Velocity:**
 - Total plans completed: 2
-- Average duration: 19min
+- Average duration: 19 min
 - Total execution time: 0.6 hours
 
 **By Phase:**
 
 | Phase | Plans | Total | Avg/Plan |
 |-------|-------|-------|----------|
-| 01-desktop-app | 2/2 | 38min | 19min |
+| 01-desktop-app | 2/2 | 38 min | 19 min |
 
 **Recent Trend:**
-- Last 5 plans: 01-01 (13min), 01-02 (25min)
+- Last 5 plans: 01-01 (13 min), 01-02 (25 min)
 - Trend: -
 
 *Updated after each plan completion*

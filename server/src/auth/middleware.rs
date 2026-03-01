@@ -11,10 +11,17 @@ use crate::state::AppState;
 /// Extract session ID from Authorization header (Bearer) or session cookie
 pub fn extract_session_id(request: &Request) -> Option<String> {
     // Try Authorization: Bearer header first (Tauri/mobile clients)
+    // RFC 7235: auth scheme is case-insensitive
     if let Some(auth_header) = request.headers().get(AUTHORIZATION) {
         if let Ok(value) = auth_header.to_str() {
-            if let Some(token) = value.strip_prefix("Bearer ") {
-                return Some(token.to_string());
+            let value = value.trim();
+            if let Some(prefix) = value.get(..7) {
+                if prefix.eq_ignore_ascii_case("bearer ") {
+                    let token = value[7..].trim();
+                    if !token.is_empty() {
+                        return Some(token.to_string());
+                    }
+                }
             }
         }
     }

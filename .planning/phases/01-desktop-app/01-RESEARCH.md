@@ -109,13 +109,13 @@ The app must not request notification permission immediately on launch. Per the 
 |-----------|--------------|
 | `tauri-plugin-updater` | Auto-update is a "looks done but isn't" item. Ship the app first, add auto-update as a follow-up. Not in DESK-01 through DESK-04. |
 | `tauri-plugin-deep-link` | Deep linking (`relay://open/channel/general`) is useful but not required by any DESK requirement. |
-| `tauri-plugin-websocket` | The browser's native `WebSocket` API works in Tauri's webview for connecting to remote servers. The Tauri plugin is only needed if browser WS is blocked by CORS/security, which is unlikely for WSS connections. Start with native `WebSocket`; add the plugin only if problems arise. |
+| `tauri-plugin-websocket` | The browser's native `WebSocket` API works in Tauri's webview for connecting to remote servers. The Tauri plugin provides a native WebSocket client (outside the browser sandbox); WebSocket connections are not subject to CORS — security is enforced by server-side Origin header validation during the handshake. Start with native `WebSocket`; add the plugin only if problems arise. |
 
 ---
 
 ## Architecture: How Tauri Wraps Relay
 
-```
+```text
 +-------------------------------------------------------+
 |  Tauri Desktop App                                     |
 |  +-------------------------------------------------+   |
@@ -156,7 +156,7 @@ The app must not request notification permission immediately on launch. Per the 
 **Scope:** Initialize Tauri project within the existing monorepo, configure it to load the SvelteKit SPA, and display a tray icon.
 
 **Directory structure:**
-```
+```text
 fuck-discord/
   client/           # Existing SvelteKit
   server/           # Existing Rust server
@@ -571,7 +571,7 @@ The current WS handler (`ws/handler.rs` lines 178-201) uses a 100ms polling inte
 
 | Question | Answer |
 |----------|--------|
-| Does Tauri support the browser WebSocket API for remote connections? | Yes. The webview's native `WebSocket` API works for connecting to remote servers. The Tauri WebSocket plugin is only needed for bypassing CORS issues, which should not apply to WSS connections. |
+| Does Tauri support the browser WebSocket API for remote connections? | Yes. The webview's native `WebSocket` API works for connecting to remote servers. The Tauri WebSocket plugin provides a native (non-browser) WebSocket client not subject to browser fetch CORS restrictions. Note that WebSocket security is enforced by server-side Origin header validation during the handshake, not by CORS rules. The browser API is sufficient for Relay. |
 | Where does Tauri store webview data (localStorage, cookies)? | In the app's data directory (`~/Library/Application Support/` on macOS, `%APPDATA%` on Windows). This persists between app restarts. |
 | Can the webview JS continue running when the window is hidden? | Yes. Hiding the window (not closing/destroying it) keeps the webview's JS engine active. The WebSocket connection and all stores continue operating. |
 | Does the SvelteKit build need to change for Tauri? | No. The existing `adapter-static` + `ssr = false` + `fallback: 'index.html'` configuration is exactly what Tauri requires. |

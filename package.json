@@ -3,10 +3,10 @@
 	"scripts": {
 		"dev:client": "cd client && npm run dev",
 		"dev:server": "cd server && cargo watch -x run",
-		"dev:desktop": "cargo tauri dev",
+		"dev:desktop": "tauri dev",
 		"build:client": "cd client && npm run build",
 		"build:server": "cargo build --release",
-		"build:desktop": "cargo tauri build",
+		"build:desktop": "tauri build",
 		"build": "npm run build:client && npm run build:server"
 	},
 	"devDependencies": {

@@ -31,12 +31,14 @@
 		url = url.replace(/\/+$/, '');
 
 		try {
-			// Validate: hit the server's auth endpoint. 401 = reachable. 200 = also fine.
-			await fetch(`${url}/api/auth/me`, {
+			// Validate: hit the server's auth endpoint. 200 or 401 = reachable Relay server.
+			const res = await fetch(`${url}/api/auth/me`, {
 				method: 'GET',
 				signal: AbortSignal.timeout(10000)
 			});
-			// Any HTTP response means the server is reachable
+			if (res.status !== 200 && res.status !== 401) {
+				throw new Error(`Unexpected status: ${res.status}`);
+			}
 			await setServerUrl(url);
 			needsServerUrl = false;
 		} catch {

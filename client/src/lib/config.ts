@@ -68,8 +68,7 @@ export function getWsUrl(): string {
 /** Build an absolute API URL from a relative path like '/api/auth/login'. */
 export function getApiUrl(path: string): string {
 	if (!_serverUrl) throw new Error('Server URL not configured');
-	// In browser, _serverUrl is window.location.origin, so this still produces the correct absolute URL
-	return `${_serverUrl}${path}`;
+	return new URL(path, _serverUrl).href;
 }
 
 /**

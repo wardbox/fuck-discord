@@ -68,6 +68,7 @@ pub fn router(state: AppState) -> Router {
                 .allow_origin([
                     "tauri://localhost".parse().unwrap(),
                     "https://tauri.localhost".parse().unwrap(),
+                    "http://tauri.localhost".parse().unwrap(),
                 ])
                 .allow_methods([Method::GET, Method::POST, Method::PATCH, Method::DELETE, Method::OPTIONS])
                 .allow_headers([header::CONTENT_TYPE, header::AUTHORIZATION, header::COOKIE])

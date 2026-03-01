@@ -175,7 +175,7 @@ Each task was committed atomically:
 
 ---
 
-**Total deviations:** 8 auto-fixed (4 bugs during implementation, 4 bugs + 1 missing critical during verification)
+**Total deviations:** 8 auto-fixed (3 bugs during implementation, 4 bugs + 1 missing critical during verification)
 **Impact on plan:** All fixes were necessary for correctness. The fetchWithAuth migration (deviation 8) was a pre-existing gap from Plan 01-01 that only surfaced when testing in Tauri mode. No scope creep.
 
 ## Issues Encountered
@@ -193,7 +193,7 @@ None - no external service configuration required.
 
 ## Self-Check: PASSED
 
-All 2 created files verified. All 6 key modified files verified. All 3 task commits verified (b8612f2, e7cce5e, c4ca4ac).
+All 2 created files, 6 key modified files, and 3 task commits (b8612f2, e7cce5e, c4ca4ac) were verified.
 
 ---
 *Phase: 01-desktop-app*
