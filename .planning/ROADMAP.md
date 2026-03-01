@@ -98,7 +98,7 @@ Phases execute in numeric order: 1 -> 2 -> 3 -> 4 -> 5
 
 | Phase | Plans Complete | Status | Completed |
 |-------|----------------|--------|-----------|
-| 1. Desktop App | 0/2 | Planned | - |
+| 1. Desktop App | 1/2 | In Progress | - |
 | 2. Chat & Awareness | 0/3 | Not started | - |
 | 3. Encryption at Rest | 0/1 | Not started | - |
 | 4. Mobile App | 0/2 | Not started | - |
