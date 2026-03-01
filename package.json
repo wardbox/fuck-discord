@@ -1,0 +1,13 @@
+{
+	"private": true,
+	"scripts": {
+		"dev:client": "cd client && npm run dev",
+		"dev:server": "cd server && cargo watch -x run",
+		"build:client": "cd client && npm run build",
+		"build:server": "cargo build --release",
+		"build": "npm run build:client && npm run build:server"
+	},
+	"devDependencies": {
+		"concurrently": "^9.2.1"
+	}
+}
