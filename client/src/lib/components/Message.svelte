@@ -20,7 +20,23 @@
 	let isOwn = $derived(auth.user?.id === message.author_id);
 	let confirmingDelete = $state(false);
 	let showEmojiPicker = $state(false);
+	let emojiPickerEl: HTMLDivElement | undefined = $state();
 	let reactions = $derived(message.reactions ?? []);
+
+	$effect(() => {
+		if (!showEmojiPicker) return;
+		function onClick(e: MouseEvent) {
+			if (emojiPickerEl && !emojiPickerEl.contains(e.target as Node)) {
+				showEmojiPicker = false;
+			}
+		}
+		// Defer to avoid the same click that opened it from closing it
+		const id = setTimeout(() => document.addEventListener('click', onClick), 0);
+		return () => {
+			clearTimeout(id);
+			document.removeEventListener('click', onClick);
+		};
+	});
 
 	function startEdit() {
 		messageStore.startEditing(message);
@@ -67,7 +83,8 @@
 		{/if}
 	</div>
 	{#if showEmojiPicker}
-		<div class="absolute right-2 {topClass === 'top-0' ? 'top-6' : 'top-8'} z-10 flex gap-0.5 rounded border border-border bg-bg-secondary p-1 shadow-lg">
+		<!-- svelte-ignore a11y_no_static_element_interactions -->
+		<div bind:this={emojiPickerEl} class="absolute right-2 {topClass === 'top-0' ? 'top-6' : 'top-8'} z-10 flex gap-0.5 rounded border border-border bg-bg-secondary p-1 shadow-lg">
 			{#each QUICK_EMOJIS as emoji}
 				<button onclick={() => toggleReaction(emoji)} class="rounded p-1 text-sm hover:bg-white/10">
 					{emoji}

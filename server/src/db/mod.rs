@@ -10,7 +10,7 @@ use rusqlite::Connection;
 
 use crate::state::DbPool;
 
-pub fn create_pool(database_path: &str) -> Result<DbPool, r2d2::Error> {
+pub fn create_pool(database_path: &str) -> anyhow::Result<DbPool> {
     let manager = SqliteConnectionManager::file(database_path)
         .with_init(|conn| {
             // Use pragma_update_and_check and handle PRAGMAs that may
@@ -33,10 +33,9 @@ pub fn create_pool(database_path: &str) -> Result<DbPool, r2d2::Error> {
 
     // WAL mode is database-level, only needs to be set once
     {
-        let conn = pool.get().expect("Failed to get initial connection");
+        let conn = pool.get()?;
         let _: String = conn
-            .query_row("PRAGMA journal_mode=WAL", [], |row| row.get(0))
-            .expect("Failed to set WAL mode");
+            .query_row("PRAGMA journal_mode=WAL", [], |row| row.get(0))?;
     }
 
     Ok(pool)
@@ -59,13 +58,11 @@ fn migrate(conn: &Connection) -> rusqlite::Result<()> {
         );",
     )?;
 
-    let version: i64 = conn
-        .query_row(
-            "SELECT COALESCE(MAX(version), 0) FROM schema_version",
-            [],
-            |row| row.get(0),
-        )
-        .unwrap_or(0);
+    let version: i64 = conn.query_row(
+        "SELECT COALESCE(MAX(version), 0) FROM schema_version",
+        [],
+        |row| row.get(0),
+    )?;
 
     if version < 1 {
         conn.execute_batch(include_str!("../../migrations/001_initial.sql"))?;

@@ -23,10 +23,25 @@ pub async fn ws_upgrade(
 async fn handle_socket(socket: WebSocket, state: AppState) {
     let (mut sender, mut receiver) = socket.split();
 
-    // Wait for authentication message
+    // Wait for authentication message (with timeout)
+    let auth_deadline = tokio::time::Instant::now() + tokio::time::Duration::from_secs(10);
     let user_id = loop {
-        match receiver.next().await {
-            Some(Ok(ws::Message::Text(text))) => {
+        let remaining = auth_deadline.saturating_duration_since(tokio::time::Instant::now());
+        if remaining.is_zero() {
+            let err = ServerMessage::Error {
+                code: "auth_timeout".to_string(),
+                message: "Authentication timed out".to_string(),
+            };
+            let _ = sender
+                .send(ws::Message::Text(
+                    serde_json::to_string(&err).unwrap().into(),
+                ))
+                .await;
+            return;
+        }
+
+        match tokio::time::timeout(remaining, receiver.next()).await {
+            Ok(Some(Ok(ws::Message::Text(text)))) => {
                 match serde_json::from_str::<ClientMessage>(&text) {
                     Ok(ClientMessage::Authenticate { token }) => {
                         // Validate session token
@@ -64,7 +79,20 @@ async fn handle_socket(socket: WebSocket, state: AppState) {
                     }
                 }
             }
-            Some(Ok(ws::Message::Close(_))) | None => return,
+            Ok(Some(Ok(ws::Message::Close(_)))) | Ok(None) => return,
+            Err(_) => {
+                // Timeout expired
+                let err = ServerMessage::Error {
+                    code: "auth_timeout".to_string(),
+                    message: "Authentication timed out".to_string(),
+                };
+                let _ = sender
+                    .send(ws::Message::Text(
+                        serde_json::to_string(&err).unwrap().into(),
+                    ))
+                    .await;
+                return;
+            }
             _ => continue,
         }
     };
@@ -144,7 +172,7 @@ async fn handle_socket(socket: WebSocket, state: AppState) {
     let (outgoing_tx, mut outgoing_rx) = tokio::sync::mpsc::channel::<ServerMessage>(256);
 
     // Broadcast listener task
-    let outgoing_tx_clone = outgoing_tx.clone();
+    let listen_tx = outgoing_tx;
     let listen_state = state.clone();
     let listen_task = tokio::spawn(async move {
         let mut interval = tokio::time::interval(tokio::time::Duration::from_millis(100));
@@ -161,7 +189,7 @@ async fn handle_socket(socket: WebSocket, state: AppState) {
                             subscribed.insert(channel.id.clone());
                         }
                     }
-                    if outgoing_tx_clone.send(msg).await.is_err() {
+                    if listen_tx.send(msg).await.is_err() {
                         return;
                     }
                 }
@@ -195,7 +223,6 @@ async fn handle_socket(socket: WebSocket, state: AppState) {
                                 &incoming_state,
                                 &incoming_user_id,
                                 client_msg,
-                                &outgoing_tx,
                             )
                             .await;
                         }
@@ -217,24 +244,23 @@ async fn handle_socket(socket: WebSocket, state: AppState) {
     }
     listen_task.abort();
 
-    // Set user offline
+    // Set user offline and broadcast with fresh channel list
     {
         match state.db.get() {
             Ok(conn) => {
                 let _ = db::users::update_status(&conn, &user_id, "offline");
+                let current_channels = db::channels::get_all_channels(&conn).unwrap_or_default();
+                broadcast_to_all_channels(&state, &current_channels, &ServerMessage::PresenceUpdate {
+                    user_id: user_id.clone(),
+                    status: "offline".to_string(),
+                })
+                .await;
             }
             Err(e) => {
                 tracing::error!("DB error setting user offline: {e}");
             }
         }
     }
-
-    // Broadcast offline presence
-    broadcast_to_all_channels(&state, &channels, &ServerMessage::PresenceUpdate {
-        user_id: user_id.clone(),
-        status: "offline".to_string(),
-    })
-    .await;
 
     tracing::info!("WebSocket disconnected for user {user_id}");
 }
@@ -243,7 +269,6 @@ async fn handle_client_message(
     state: &AppState,
     user_id: &str,
     msg: ClientMessage,
-    _outgoing: &tokio::sync::mpsc::Sender<ServerMessage>,
 ) {
     match msg {
         ClientMessage::SendMessage {
@@ -385,15 +410,12 @@ async fn handle_client_message(
             };
             let _ = db::users::update_status(&conn, user_id, &status);
 
-            // Broadcast presence change
             let channels = db::channels::get_all_channels(&conn).unwrap_or_default();
-            for ch in &channels {
-                let tx = state.get_or_create_broadcast(&ch.id).await;
-                let _ = tx.send(ServerMessage::PresenceUpdate {
-                    user_id: user_id.to_string(),
-                    status: status.clone(),
-                });
-            }
+            broadcast_to_all_channels(state, &channels, &ServerMessage::PresenceUpdate {
+                user_id: user_id.to_string(),
+                status,
+            })
+            .await;
         }
         ClientMessage::Authenticate { .. } => {
             // Already authenticated, ignore

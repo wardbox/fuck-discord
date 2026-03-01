@@ -14,25 +14,31 @@
 	let searching = $state(false);
 	let searched = $state(false);
 	let error = $state('');
+	let abortController: AbortController | null = null;
 
 	async function handleSearch(e: Event) {
 		e.preventDefault();
 		const q = query.trim();
 		if (!q) return;
 
+		abortController?.abort();
+		abortController = new AbortController();
+		const signal = abortController.signal;
+
 		searching = true;
 		searched = true;
 		error = '';
 
 		try {
-			const res = await fetch(`/api/search?q=${encodeURIComponent(q)}`);
+			const res = await fetch(`/api/search?q=${encodeURIComponent(q)}`, { signal });
 			if (res.ok) {
 				results = await res.json();
 			} else {
 				results = [];
 				error = `Search failed (${res.status})`;
 			}
-		} catch {
+		} catch (err) {
+			if (err instanceof DOMException && err.name === 'AbortError') return;
 			results = [];
 			error = 'Network error — could not reach server.';
 		} finally {
@@ -44,7 +50,7 @@
 <div class="flex h-full w-80 flex-col border-l border-border bg-bg-secondary">
 	<div class="flex items-center justify-between border-b border-border px-3 py-2">
 		<span class="text-sm font-semibold text-text-primary">Search</span>
-		<button onclick={onClose} class="rounded p-1 text-text-muted hover:text-text-primary">
+		<button onclick={onClose} class="rounded p-1 text-text-muted hover:text-text-primary" aria-label="Close search">
 			<X size={16} />
 		</button>
 	</div>

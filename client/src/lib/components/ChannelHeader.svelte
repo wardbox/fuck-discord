@@ -18,22 +18,27 @@
 	}
 
 	async function saveTopic() {
-		if (!channelStore.activeChannel || savingTopic) return;
+		const channel = channelStore.activeChannel;
+		if (!channel || savingTopic) return;
+		const channelId = channel.id;
 		const newTopic = topicInput.trim() || null;
-		if (newTopic === (channelStore.activeChannel.topic ?? null)) {
+		if (newTopic === (channel.topic ?? null)) {
 			editingTopic = false;
 			return;
 		}
 
 		savingTopic = true;
 		try {
-			const res = await fetch(`/api/channels/${channelStore.activeChannel.id}`, {
+			const res = await fetch(`/api/channels/${channelId}`, {
 				method: 'PATCH',
 				headers: { 'Content-Type': 'application/json' },
 				body: JSON.stringify({ topic: newTopic })
 			});
 			if (res.ok) {
-				channelStore.updateChannel({ ...channelStore.activeChannel, topic: newTopic });
+				const current = channelStore.activeChannel;
+				if (current && current.id === channelId) {
+					channelStore.updateChannel({ ...current, topic: newTopic });
+				}
 				editingTopic = false;
 			}
 		} finally {
@@ -84,6 +89,7 @@
 				onclick={onToggleSearch}
 				class="rounded p-1.5 text-text-muted hover:text-text-primary hover:bg-bg-hover"
 				title="Search messages (Ctrl+F)"
+				aria-label="Search messages"
 			>
 				<Search size={18} />
 			</button>

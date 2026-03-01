@@ -10,6 +10,15 @@ use crate::db;
 use crate::error::{AppError, AppResult};
 use crate::state::AppState;
 
+const SESSION_MAX_AGE: i64 = 30 * 24 * 60 * 60; // 30 days
+
+fn session_cookie(session_id: &str, max_age: i64) -> String {
+    let secure_attr = if cfg!(debug_assertions) { "" } else { "; Secure" };
+    format!(
+        "relay_session={session_id}; Path=/; HttpOnly; SameSite=Lax; Max-Age={max_age}{secure_attr}"
+    )
+}
+
 #[derive(Deserialize)]
 pub struct RegisterRequest {
     pub username: String,
@@ -92,14 +101,8 @@ pub async fn register(
         session_id: session_id.clone(),
     };
 
-    let secure_attr = if cfg!(debug_assertions) { "" } else { "; Secure" };
-    let cookie = format!(
-        "relay_session={session_id}; Path=/; HttpOnly; SameSite=Lax; Max-Age={}{secure_attr}",
-        30 * 24 * 60 * 60 // 30 days
-    );
-
     Ok((
-        [(SET_COOKIE, cookie)],
+        [(SET_COOKIE, session_cookie(&session_id, SESSION_MAX_AGE))],
         Json(response),
     )
         .into_response())
@@ -128,14 +131,8 @@ pub async fn login(
         session_id: session_id.clone(),
     };
 
-    let secure_attr = if cfg!(debug_assertions) { "" } else { "; Secure" };
-    let cookie = format!(
-        "relay_session={session_id}; Path=/; HttpOnly; SameSite=Lax; Max-Age={}{secure_attr}",
-        30 * 24 * 60 * 60
-    );
-
     Ok((
-        [(SET_COOKIE, cookie)],
+        [(SET_COOKIE, session_cookie(&session_id, SESSION_MAX_AGE))],
         Json(response),
     )
         .into_response())
@@ -150,13 +147,8 @@ pub async fn logout(
         auth::session::delete_session(&conn, &session_id)?;
     }
 
-    let secure_attr = if cfg!(debug_assertions) { "" } else { "; Secure" };
-    let cookie = format!(
-        "relay_session=; Path=/; HttpOnly; SameSite=Lax; Max-Age=0{secure_attr}"
-    );
-
     Ok((
-        [(SET_COOKIE, cookie)],
+        [(SET_COOKIE, session_cookie("", 0))],
         Json(serde_json::json!({"ok": true})),
     )
         .into_response())

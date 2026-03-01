@@ -31,18 +31,20 @@ pub async fn get_messages(
     let reactions_map = db::reactions::get_reactions_for_messages(&conn, &message_ids)?;
 
     // Build response with reactions attached
-    let result: Vec<serde_json::Value> = messages
+    let result = messages
         .iter()
         .map(|m| {
-            let mut val = serde_json::to_value(m).unwrap();
+            let mut val = serde_json::to_value(m)
+                .map_err(|e| crate::error::AppError::Internal(format!("Serialization error: {e}")))?;
             if let Some(reactions) = reactions_map.get(&m.id) {
-                val["reactions"] = serde_json::to_value(reactions).unwrap();
+                val["reactions"] = serde_json::to_value(reactions)
+                    .map_err(|e| crate::error::AppError::Internal(format!("Serialization error: {e}")))?;
             } else {
                 val["reactions"] = serde_json::json!([]);
             }
-            val
+            Ok(val)
         })
-        .collect();
+        .collect::<Result<Vec<serde_json::Value>, crate::error::AppError>>()?;
 
     Ok(Json(serde_json::json!(result)))
 }

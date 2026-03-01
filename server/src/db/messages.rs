@@ -164,16 +164,23 @@ pub fn edit_message(
 pub fn delete_message(conn: &Connection, message_id: &str) -> rusqlite::Result<bool> {
     let tx = conn.unchecked_transaction()?;
 
-    // Delete from FTS first
-    if let Ok(rowid) = tx.query_row::<i64, _, _>(
+    // Delete from FTS first (if the message exists)
+    match tx.query_row::<i64, _, _>(
         "SELECT rowid FROM messages WHERE id = ?1",
         params![message_id],
         |row| row.get(0),
     ) {
-        tx.execute(
-            "DELETE FROM messages_fts WHERE rowid = ?1",
-            params![rowid],
-        )?;
+        Ok(rowid) => {
+            tx.execute(
+                "DELETE FROM messages_fts WHERE rowid = ?1",
+                params![rowid],
+            )?;
+        }
+        Err(rusqlite::Error::QueryReturnedNoRows) => {
+            // Message doesn't exist — nothing to delete
+            return Ok(false);
+        }
+        Err(e) => return Err(e),
     }
 
     let rows = tx.execute("DELETE FROM messages WHERE id = ?1", params![message_id])?;

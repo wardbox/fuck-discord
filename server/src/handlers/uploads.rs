@@ -58,15 +58,19 @@ pub async fn upload_file(
             )));
         }
 
-        // Validate file extension
+        // Validate file extension (must be present and in allowlist)
         let ext = PathBuf::from(&filename)
             .extension()
             .map(|e| e.to_string_lossy().to_lowercase())
             .unwrap_or_default();
-        if !ext.is_empty() && !ALLOWED_EXTENSIONS.contains(&ext.as_str()) {
-            return Err(AppError::BadRequest(format!(
-                "File type .{ext} not allowed"
-            )));
+        if ext.is_empty() || !ALLOWED_EXTENSIONS.contains(&ext.as_str()) {
+            return Err(AppError::BadRequest(
+                if ext.is_empty() {
+                    "File must have a recognized extension".to_string()
+                } else {
+                    format!("File type .{ext} not allowed")
+                }
+            ));
         }
 
         let ext_dot = if ext.is_empty() {
