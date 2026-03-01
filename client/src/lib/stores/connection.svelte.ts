@@ -1,4 +1,5 @@
 import type { ClientMessage, ServerMessage } from '$lib/protocol/types';
+import { getWsUrl } from '$lib/config';
 import { auth } from './auth.svelte';
 import { channelStore } from './channels.svelte';
 import { memberStore } from './members.svelte';
@@ -20,8 +21,7 @@ class ConnectionStore {
 		if (this.ws || this.connecting || !auth.sessionId) return;
 
 		this.connecting = true;
-		const protocol = window.location.protocol === 'https:' ? 'wss:' : 'ws:';
-		const url = `${protocol}//${window.location.host}/ws`;
+		const url = getWsUrl();
 
 		try {
 			this.ws = new WebSocket(url);
