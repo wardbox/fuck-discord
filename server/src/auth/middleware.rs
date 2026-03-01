@@ -1,6 +1,6 @@
 use axum::{
     extract::{Request, State},
-    http::header::COOKIE,
+    http::header::{AUTHORIZATION, COOKIE},
     middleware::Next,
     response::Response,
 };
@@ -8,18 +8,24 @@ use axum::{
 use crate::error::AppError;
 use crate::state::AppState;
 
-/// Extract user ID from session cookie
+/// Extract session ID from Authorization header (Bearer) or session cookie
 pub fn extract_session_id(request: &Request) -> Option<String> {
+    // Try Authorization: Bearer header first (Tauri/mobile clients)
+    if let Some(auth_header) = request.headers().get(AUTHORIZATION) {
+        if let Ok(value) = auth_header.to_str() {
+            if let Some(token) = value.strip_prefix("Bearer ") {
+                return Some(token.to_string());
+            }
+        }
+    }
+
+    // Fall back to cookie (browser clients)
     let cookie_header = request.headers().get(COOKIE)?.to_str().ok()?;
     cookie_header
         .split(';')
         .find_map(|cookie| {
             let cookie = cookie.trim();
-            if let Some(value) = cookie.strip_prefix("relay_session=") {
-                Some(value.to_string())
-            } else {
-                None
-            }
+            cookie.strip_prefix("relay_session=").map(|v| v.to_string())
         })
 }
 
