@@ -1,4 +1,5 @@
 <script lang="ts">
+	import { onDestroy } from 'svelte';
 	import type { Message as MessageType } from '$lib/protocol/types';
 	import { formatCompactTimestamp } from '$lib/utils/time';
 	import { X, Search } from 'lucide-svelte';
@@ -22,15 +23,16 @@
 		if (!q) return;
 
 		abortController?.abort();
-		abortController = new AbortController();
-		const signal = abortController.signal;
+		const controller = new AbortController();
+		abortController = controller;
 
 		searching = true;
 		searched = true;
 		error = '';
 
 		try {
-			const res = await fetch(`/api/search?q=${encodeURIComponent(q)}`, { signal });
+			const res = await fetch(`/api/search?q=${encodeURIComponent(q)}`, { signal: controller.signal });
+			if (abortController !== controller) return;
 			if (res.ok) {
 				results = await res.json();
 			} else {
@@ -39,12 +41,20 @@
 			}
 		} catch (err) {
 			if (err instanceof DOMException && err.name === 'AbortError') return;
+			if (abortController !== controller) return;
 			results = [];
 			error = 'Network error — could not reach server.';
 		} finally {
-			searching = false;
+			if (abortController === controller) {
+				searching = false;
+			}
 		}
 	}
+
+	onDestroy(() => {
+		abortController?.abort();
+		abortController = null;
+	});
 </script>
 
 <div class="flex h-full w-80 flex-col border-l border-border bg-bg-secondary">

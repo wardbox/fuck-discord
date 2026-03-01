@@ -31,12 +31,38 @@
 			}
 		}
 		// Defer to avoid the same click that opened it from closing it
-		const id = setTimeout(() => document.addEventListener('click', onClick), 0);
+		const id = setTimeout(() => {
+			document.addEventListener('click', onClick);
+			// Focus first emoji button when picker opens
+			const first = emojiPickerEl?.querySelector<HTMLButtonElement>('[role="menuitem"]');
+			first?.focus();
+		}, 0);
 		return () => {
 			clearTimeout(id);
 			document.removeEventListener('click', onClick);
 		};
 	});
+
+	function handlePickerKeydown(e: KeyboardEvent) {
+		if (e.key === 'Escape') {
+			showEmojiPicker = false;
+			return;
+		}
+		if (e.key === 'ArrowRight' || e.key === 'ArrowDown') {
+			e.preventDefault();
+			const items = emojiPickerEl?.querySelectorAll<HTMLButtonElement>('[role="menuitem"]');
+			if (!items) return;
+			const idx = Array.from(items).indexOf(document.activeElement as HTMLButtonElement);
+			items[(idx + 1) % items.length]?.focus();
+		}
+		if (e.key === 'ArrowLeft' || e.key === 'ArrowUp') {
+			e.preventDefault();
+			const items = emojiPickerEl?.querySelectorAll<HTMLButtonElement>('[role="menuitem"]');
+			if (!items) return;
+			const idx = Array.from(items).indexOf(document.activeElement as HTMLButtonElement);
+			items[(idx - 1 + items.length) % items.length]?.focus();
+		}
+	}
 
 	function startEdit() {
 		messageStore.startEditing(message);
@@ -83,10 +109,15 @@
 		{/if}
 	</div>
 	{#if showEmojiPicker}
-		<!-- svelte-ignore a11y_no_static_element_interactions -->
-		<div bind:this={emojiPickerEl} class="absolute right-2 {topClass === 'top-0' ? 'top-6' : 'top-8'} z-10 flex gap-0.5 rounded border border-border bg-bg-secondary p-1 shadow-lg">
+		<div
+			bind:this={emojiPickerEl}
+			role="menu"
+			tabindex="-1"
+			onkeydown={handlePickerKeydown}
+			class="absolute right-2 {topClass === 'top-0' ? 'top-6' : 'top-8'} z-10 flex gap-0.5 rounded border border-border bg-bg-secondary p-1 shadow-lg"
+		>
 			{#each QUICK_EMOJIS as emoji}
-				<button onclick={() => toggleReaction(emoji)} class="rounded p-1 text-sm hover:bg-white/10">
+				<button role="menuitem" onclick={() => toggleReaction(emoji)} class="rounded p-1 text-sm hover:bg-white/10">
 					{emoji}
 				</button>
 			{/each}

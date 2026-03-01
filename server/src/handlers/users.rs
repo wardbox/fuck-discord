@@ -47,19 +47,22 @@ pub async fn update_me(
         }
     }
 
-    // All validation passed — apply changes
+    // All validation passed — apply changes atomically
     let conn = state.db.get()?;
+    let tx = conn.unchecked_transaction()?;
 
     if let Some(name) = &trimmed_name {
-        conn.execute(
+        tx.execute(
             "UPDATE users SET display_name = ?1, updated_at = datetime('now') WHERE id = ?2",
             rusqlite::params![name, auth_user.0],
         )?;
     }
 
     if let Some(status) = &req.status {
-        db::users::update_status(&conn, &auth_user.0, status)?;
+        db::users::update_status(&tx, &auth_user.0, status)?;
     }
+
+    tx.commit()?;
 
     let user =
         db::users::get_user_by_id(&conn, &auth_user.0)?.ok_or(AppError::NotFound)?;

@@ -47,7 +47,8 @@ pub fn router(state: AppState) -> Router {
         .layer(middleware::from_fn_with_state(state.clone(), require_auth));
 
     let upload_serve = Router::new()
-        .route("/uploads/{filename}", get(uploads::serve_upload));
+        .route("/uploads/{filename}", get(uploads::serve_upload))
+        .layer(middleware::from_fn_with_state(state.clone(), require_auth));
 
     let ws_route = Router::new().route("/ws", get(ws::handler::ws_upgrade));
 

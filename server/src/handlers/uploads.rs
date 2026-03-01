@@ -41,10 +41,8 @@ pub async fn upload_file(
             .map(|s| s.to_string())
             .unwrap_or_else(|| "upload".to_string());
 
-        let content_type = field
-            .content_type()
-            .map(|s| s.to_string())
-            .unwrap_or_else(|| "application/octet-stream".to_string());
+        // Derive MIME type from extension server-side (don't trust client)
+        let _ = field.content_type(); // consume but ignore client-supplied type
 
         let data = field
             .bytes()
@@ -73,12 +71,13 @@ pub async fn upload_file(
             ));
         }
 
-        let ext_dot = if ext.is_empty() {
-            String::new()
-        } else {
-            format!(".{ext}")
-        };
-        let unique_name = format!("{}{}", ulid::Ulid::new(), ext_dot);
+        // ext is guaranteed non-empty after validation above
+        let unique_name = format!("{}.{ext}", ulid::Ulid::new());
+
+        // Derive content type from validated extension
+        let content_type = mime_guess::from_ext(&ext)
+            .first_or_octet_stream()
+            .to_string();
 
         // Save file
         let file_path = state.uploads_dir.join(&unique_name);
