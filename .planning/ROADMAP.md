@@ -28,11 +28,11 @@ Decimal phases appear between their surrounding integers in numeric order.
   1. User can install and launch a native desktop app that connects to their Relay server via a configurable URL
   2. User receives native OS notifications (toast/banner) when messages arrive in channels they are active in
   3. User can close the window and the app persists in the system tray with an icon, staying connected to the server
-**Plans**: TBD
+**Plans**: 2 plans
 
 Plans:
-- [ ] 01-01: TBD
-- [ ] 01-02: TBD
+- [ ] 01-01-PLAN.md -- Tauri shell + configurable server URL (DESK-01, DESK-04)
+- [ ] 01-02-PLAN.md -- System tray persistence + native notifications (DESK-02, DESK-03)
 
 ### Phase 2: Chat & Awareness
 **Goal**: Users have full situational awareness of channel activity and can organize conversations without missing anything
@@ -98,7 +98,7 @@ Phases execute in numeric order: 1 -> 2 -> 3 -> 4 -> 5
 
 | Phase | Plans Complete | Status | Completed |
 |-------|----------------|--------|-----------|
-| 1. Desktop App | 0/2 | Not started | - |
+| 1. Desktop App | 0/2 | Planned | - |
 | 2. Chat & Awareness | 0/3 | Not started | - |
 | 3. Encryption at Rest | 0/1 | Not started | - |
 | 4. Mobile App | 0/2 | Not started | - |
