@@ -100,35 +100,35 @@ Which phases cover which requirements. Updated during roadmap creation.
 
 | Requirement | Phase | Status |
 |-------------|-------|--------|
-| DESK-01 | — | Pending |
-| DESK-02 | — | Pending |
-| DESK-03 | — | Pending |
-| DESK-04 | — | Pending |
-| MOB-01 | — | Pending |
-| MOB-02 | — | Pending |
-| MOB-03 | — | Pending |
-| VOICE-01 | — | Pending |
-| VOICE-02 | — | Pending |
-| VOICE-03 | — | Pending |
-| NOTIF-01 | — | Pending |
-| NOTIF-02 | — | Pending |
-| NOTIF-03 | — | Pending |
-| NOTIF-04 | — | Pending |
-| NOTIF-05 | — | Pending |
-| EAR-01 | — | Pending |
-| EAR-02 | — | Pending |
-| CHAT-01 | — | Pending |
-| CHAT-02 | — | Pending |
-| CHAT-03 | — | Pending |
-| CHAT-04 | — | Pending |
-| CHAT-05 | — | Pending |
-| CHAT-06 | — | Pending |
+| DESK-01 | Phase 1: Desktop App | Pending |
+| DESK-02 | Phase 1: Desktop App | Pending |
+| DESK-03 | Phase 1: Desktop App | Pending |
+| DESK-04 | Phase 1: Desktop App | Pending |
+| NOTIF-01 | Phase 2: Chat & Awareness | Pending |
+| NOTIF-02 | Phase 2: Chat & Awareness | Pending |
+| NOTIF-03 | Phase 2: Chat & Awareness | Pending |
+| NOTIF-04 | Phase 2: Chat & Awareness | Pending |
+| NOTIF-05 | Phase 2: Chat & Awareness | Pending |
+| CHAT-01 | Phase 2: Chat & Awareness | Pending |
+| CHAT-02 | Phase 2: Chat & Awareness | Pending |
+| CHAT-03 | Phase 2: Chat & Awareness | Pending |
+| CHAT-04 | Phase 2: Chat & Awareness | Pending |
+| CHAT-05 | Phase 2: Chat & Awareness | Pending |
+| CHAT-06 | Phase 2: Chat & Awareness | Pending |
+| EAR-01 | Phase 3: Encryption at Rest | Pending |
+| EAR-02 | Phase 3: Encryption at Rest | Pending |
+| MOB-01 | Phase 4: Mobile App | Pending |
+| MOB-02 | Phase 4: Mobile App | Pending |
+| MOB-03 | Phase 4: Mobile App | Pending |
+| VOICE-01 | Phase 5: Voice Channels | Pending |
+| VOICE-02 | Phase 5: Voice Channels | Pending |
+| VOICE-03 | Phase 5: Voice Channels | Pending |
 
 **Coverage:**
 - v1 requirements: 23 total
-- Mapped to phases: 0
-- Unmapped: 23 ⚠️
+- Mapped to phases: 23
+- Unmapped: 0
 
 ---
 *Requirements defined: 2026-02-28*
-*Last updated: 2026-02-28 after initial definition*
+*Last updated: 2026-02-28 after roadmap revision (Desktop App moved to Phase 1)*
