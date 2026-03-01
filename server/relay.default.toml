@@ -1,0 +1,6 @@
+# Relay server configuration
+# Copy this to relay.toml and customize
+
+[server]
+port = 3000
+database = "relay.db"
