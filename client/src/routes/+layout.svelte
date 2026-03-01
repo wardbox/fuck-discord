@@ -13,9 +13,14 @@
 	let connecting = $state(false);
 
 	onMount(async () => {
-		await initConfig();
-		needsServerUrl = isTauri() && !isServerConfigured();
-		configReady = true;
+		try {
+			await initConfig();
+			needsServerUrl = isTauri() && !isServerConfigured();
+		} catch (e) {
+			console.error('Failed to initialize config:', e);
+		} finally {
+			configReady = true;
+		}
 	});
 
 	async function connectToServer() {
@@ -29,6 +34,19 @@
 			url = 'https://' + url;
 		}
 		url = url.replace(/\/+$/, '');
+
+		// Only allow http:// for local addresses
+		try {
+			const parsed = new URL(url);
+			const host = parsed.hostname;
+			if (parsed.protocol === 'http:' && host !== 'localhost' && host !== '127.0.0.1' && host !== '::1') {
+				url = url.replace(/^http:\/\//, 'https://');
+			}
+		} catch {
+			serverUrlError = 'Invalid URL format.';
+			connecting = false;
+			return;
+		}
 
 		try {
 			// Validate: hit the server's auth endpoint. 200 or 401 = reachable Relay server.
@@ -72,7 +90,7 @@
 
 			<form onsubmit={(e) => { e.preventDefault(); connectToServer(); }} class="space-y-4">
 				{#if serverUrlError}
-					<div class="rounded bg-danger/10 px-4 py-2 text-sm text-danger">{serverUrlError}</div>
+					<div role="alert" class="rounded bg-danger/10 px-4 py-2 text-sm text-danger">{serverUrlError}</div>
 				{/if}
 
 				<div>

@@ -22,7 +22,7 @@
 
 ### What Already Works (No Changes Needed)
 
-1. **SvelteKit SPA is Tauri-ready.** The client already uses `@sveltejs/adapter-static` with `fallback: 'index.html'` and `ssr = false` in the root layout. This is exactly what Tauri requires. Zero changes to the SvelteKit build pipeline.
+1. **SvelteKit SPA is Tauri-ready.** The client already uses `@sveltejs/adapter-static` with `fallback: 'index.html'` and `ssr = false` in the root layout. This meets Tauri's requirements. Zero changes to the SvelteKit build pipeline.
 
 2. **WebSocket authentication uses session tokens, not cookies.** The WS handler (`server/src/ws/handler.rs`) authenticates via a token sent as the first message, not via cookie headers. The client stores the session token in `localStorage` and passes it via `{ type: 'authenticate', token }`. This works identically in a Tauri webview as in a browser.
 
@@ -280,7 +280,7 @@ async function showNotification(title: string, body: string) {
 
 **Platform behavior:**
 - macOS: Notification Center toast with app icon
-- Windows: Toast notification (requires installed app; shows PowerShell info during dev)
+- Windows: Toast notification (requires the app to be installed; shows PowerShell info during dev)
 - Linux: Desktop notification via `notify-rust`
 
 **Permission timing:** Do not request notification permission on launch. Request it:
@@ -574,9 +574,9 @@ The current WS handler (`ws/handler.rs` lines 178-201) uses a 100ms polling inte
 | Does Tauri support the browser WebSocket API for remote connections? | Yes. The webview's native `WebSocket` API works for connecting to remote servers. The Tauri WebSocket plugin provides a native (non-browser) WebSocket client not subject to browser fetch CORS restrictions. Note that WebSocket security is enforced by server-side Origin header validation during the handshake, not by CORS rules. The browser API is sufficient for Relay. |
 | Where does Tauri store webview data (localStorage, cookies)? | In the app's data directory (`~/Library/Application Support/` on macOS, `%APPDATA%` on Windows). This persists between app restarts. |
 | Can the webview JS continue running when the window is hidden? | Yes. Hiding the window (not closing/destroying it) keeps the webview's JS engine active. The WebSocket connection and all stores continue operating. |
-| Does the SvelteKit build need to change for Tauri? | No. The existing `adapter-static` + `ssr = false` + `fallback: 'index.html'` configuration is exactly what Tauri requires. |
+| Does the SvelteKit build need to change for Tauri? | No. The existing `adapter-static` + `ssr = false` + `fallback: 'index.html'` configuration meets Tauri's requirements. |
 | Should `src-tauri` be in the Cargo workspace? | No. Tauri manages its own dependency tree via the Tauri CLI. Adding it to the workspace would cause dependency conflicts (Tauri pins specific versions of tokio, serde, etc.). |
-| Do we need to handle the Tauri webview's CSP? | Tauri v2 sets a default CSP that allows connecting to `tauri.localhost` and `https://*`. The default policy should allow WSS/HTTPS connections to the remote Relay server. If not, the CSP can be adjusted in `tauri.conf.json`. |
+| Do we need to handle the Tauri webview's CSP? | Tauri v2 does not inject a default CSP (it is null/disabled by default). CSP must be explicitly configured in `tauri.conf.json`. This project has a custom CSP in `src-tauri/tauri.conf.json` that permits `connect-src https: wss: http: ws:` for remote Relay server connections. Developers should ensure their CSP allows WSS/HTTPS to the target server. |
 | Will `fetch()` with relative URLs work in Tauri? | No. Relative URLs resolve to the webview's local origin, not the remote server. All API calls must use absolute URLs when running in Tauri. |
 
 ---

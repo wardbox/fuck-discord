@@ -48,7 +48,7 @@ Recent decisions affecting current work:
 - [Revision]: Desktop App moved to Phase 1 -- user wants native app running before chat polish. Desktop notifications (DESK-02) fire on any message in active channels; refined targeting comes in Phase 2 with unread/mention infrastructure.
 - [01-01]: All client API calls route through fetchWithAuth() with configurable server URL
 - [01-01]: Server auth supports Authorization: Bearer header (Tauri/mobile) with cookie fallback (browser)
-- [01-01]: Tauri v2 __TAURI_INTERNALS__ for platform detection (not __TAURI__)
+- [01-01]: Tauri v2 `__TAURI_INTERNALS__` for platform detection (not `__TAURI__`)
 - [01-02]: Notification permission requested lazily on first unfocused message, not on app launch
 - [01-02]: showMessageNotification is fire-and-forget (no await) to never block message processing
 - [01-02]: app.exit(0) is the only way to quit; window close always hides to tray
