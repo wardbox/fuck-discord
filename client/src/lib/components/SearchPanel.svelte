@@ -1,6 +1,8 @@
 <script lang="ts">
+	import { goto } from '$app/navigation';
 	import { onDestroy } from 'svelte';
 	import type { Message as MessageType } from '$lib/protocol/types';
+	import { channelStore } from '$lib/stores/channels.svelte';
 	import { formatCompactTimestamp } from '$lib/utils/time';
 	import { X, Search } from 'lucide-svelte';
 
@@ -51,6 +53,12 @@
 		}
 	}
 
+	function navigateToMessage(msg: MessageType) {
+		channelStore.setActive(msg.channel_id);
+		goto(`/app/${msg.channel_id}`);
+		onClose();
+	}
+
 	onDestroy(() => {
 		abortController?.abort();
 		abortController = null;
@@ -89,13 +97,17 @@
 			<div class="p-4 text-center text-sm text-text-muted">No results found.</div>
 		{:else}
 			{#each results as msg (msg.id)}
-				<div class="border-b border-border p-3 hover:bg-bg-hover">
+				<button
+					type="button"
+					onclick={() => navigateToMessage(msg)}
+					class="block w-full border-b border-border p-3 text-left hover:bg-bg-hover cursor-pointer"
+				>
 					<div class="flex items-baseline gap-2">
 						<span class="text-xs font-medium text-accent">{msg.author_username}</span>
 						<span class="text-xs text-text-muted">{formatCompactTimestamp(msg.created_at)}</span>
 					</div>
 					<p class="mt-0.5 text-sm text-text-secondary">{msg.content}</p>
-				</div>
+				</button>
 			{/each}
 		{/if}
 	</div>

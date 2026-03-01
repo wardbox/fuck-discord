@@ -58,7 +58,13 @@ pub fn router(state: AppState) -> Router {
         .merge(upload_serve)
         .merge(ws_route)
         .fallback(serve_client)
-        .layer(CorsLayer::permissive())
+        .layer(if cfg!(debug_assertions) {
+            // In dev, allow cross-origin requests for separate dev servers
+            CorsLayer::permissive()
+        } else {
+            // In release, client is embedded — all requests are same-origin
+            CorsLayer::new()
+        })
         .layer(TraceLayer::new_for_http())
         .with_state(state)
 }

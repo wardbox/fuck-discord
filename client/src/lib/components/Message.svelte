@@ -19,6 +19,7 @@
 	let renderedContent = $derived(renderMarkdown(message.content));
 	let isOwn = $derived(auth.user?.id === message.author_id);
 	let confirmingDelete = $state(false);
+	let deleteTimerId: ReturnType<typeof setTimeout> | undefined;
 	let showEmojiPicker = $state(false);
 	let emojiPickerEl: HTMLDivElement | undefined = $state();
 	let reactions = $derived(message.reactions ?? []);
@@ -71,9 +72,11 @@
 	function handleDelete() {
 		if (!confirmingDelete) {
 			confirmingDelete = true;
-			setTimeout(() => { confirmingDelete = false; }, 3000);
+			clearTimeout(deleteTimerId);
+			deleteTimerId = setTimeout(() => { confirmingDelete = false; }, 3000);
 			return;
 		}
+		clearTimeout(deleteTimerId);
 		connection.deleteMessage(message.id);
 		confirmingDelete = false;
 	}
@@ -95,15 +98,15 @@
 </script>
 
 {#snippet actionButtons(topClass: string)}
-	<div class="absolute right-2 {topClass} hidden gap-0.5 group-hover:flex">
-		<button onclick={() => { showEmojiPicker = !showEmojiPicker; }} class="rounded p-1 text-text-muted hover:bg-white/10 hover:text-text-primary" title="Add reaction">
+	<div class="absolute right-2 {topClass} flex gap-0.5 opacity-0 pointer-events-none group-hover:opacity-100 group-hover:pointer-events-auto focus-within:opacity-100 focus-within:pointer-events-auto">
+		<button type="button" onclick={() => { showEmojiPicker = !showEmojiPicker; }} class="rounded p-1 text-text-muted hover:bg-white/10 hover:text-text-primary" title="Add reaction" aria-label="Add reaction">
 			<SmilePlus size={13} />
 		</button>
 		{#if isOwn}
-			<button onclick={startEdit} class="rounded p-1 text-text-muted hover:bg-white/10 hover:text-text-primary" title="Edit">
+			<button type="button" onclick={startEdit} class="rounded p-1 text-text-muted hover:bg-white/10 hover:text-text-primary" title="Edit" aria-label="Edit message">
 				<Pencil size={13} />
 			</button>
-			<button onclick={handleDelete} class="rounded p-1 hover:bg-white/10 {confirmingDelete ? 'text-red-400' : 'text-text-muted hover:text-text-primary'}" title={confirmingDelete ? 'Click again to delete' : 'Delete'}>
+			<button type="button" onclick={handleDelete} class="rounded p-1 hover:bg-white/10 {confirmingDelete ? 'text-red-400' : 'text-text-muted hover:text-text-primary'}" title={confirmingDelete ? 'Click again to delete' : 'Delete'} aria-label={confirmingDelete ? 'Confirm delete' : 'Delete message'}>
 				<Trash2 size={13} />
 			</button>
 		{/if}
@@ -138,7 +141,7 @@
 						{hasUserReacted(reaction.emoji)
 							? 'border-accent/50 bg-accent/10 text-text-primary'
 							: 'border-border bg-white/5 text-text-muted hover:border-border/80'}"
-					title={reaction.users.join(', ')}
+					title={`${reaction.count} ${reaction.count === 1 ? 'person' : 'people'} reacted`}
 				>
 					<span>{reaction.emoji}</span>
 					<span>{reaction.count}</span>
