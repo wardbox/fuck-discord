@@ -21,6 +21,15 @@
 	let confirmingDelete = $state(false);
 	let deleteTimerId: ReturnType<typeof setTimeout> | undefined;
 	let showEmojiPicker = $state(false);
+
+	$effect(() => {
+		return () => {
+			if (deleteTimerId) {
+				clearTimeout(deleteTimerId);
+				deleteTimerId = undefined;
+			}
+		};
+	});
 	let emojiPickerEl: HTMLDivElement | undefined = $state();
 	let reactions = $derived(message.reactions ?? []);
 
@@ -59,9 +68,10 @@
 		if (e.key === 'ArrowLeft' || e.key === 'ArrowUp') {
 			e.preventDefault();
 			const items = emojiPickerEl?.querySelectorAll<HTMLButtonElement>('[role="menuitem"]');
-			if (!items) return;
+			if (!items || items.length === 0) return;
 			const idx = Array.from(items).indexOf(document.activeElement as HTMLButtonElement);
-			items[(idx - 1 + items.length) % items.length]?.focus();
+			const next = idx < 0 ? items.length - 1 : (idx - 1 + items.length) % items.length;
+			items[next]?.focus();
 		}
 	}
 
@@ -73,10 +83,14 @@
 		if (!confirmingDelete) {
 			confirmingDelete = true;
 			clearTimeout(deleteTimerId);
-			deleteTimerId = setTimeout(() => { confirmingDelete = false; }, 3000);
+			deleteTimerId = setTimeout(() => {
+				confirmingDelete = false;
+				deleteTimerId = undefined;
+			}, 3000);
 			return;
 		}
 		clearTimeout(deleteTimerId);
+		deleteTimerId = undefined;
 		connection.deleteMessage(message.id);
 		confirmingDelete = false;
 	}

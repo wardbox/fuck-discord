@@ -74,7 +74,7 @@ async fn serve_client(uri: axum::http::Uri) -> impl IntoResponse {
     let path = uri.path().trim_start_matches('/');
 
     // Don't serve index.html for API, WS, or upload paths
-    if path == "api" || path.starts_with("api/") || path == "ws" || path.starts_with("uploads/") {
+    if path == "api" || path.starts_with("api/") || path == "ws" || path.starts_with("ws/") || path == "uploads" || path.starts_with("uploads/") {
         return axum::http::StatusCode::NOT_FOUND.into_response();
     }
 

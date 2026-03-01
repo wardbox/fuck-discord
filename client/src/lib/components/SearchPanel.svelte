@@ -36,7 +36,9 @@
 			const res = await fetch(`/api/search?q=${encodeURIComponent(q)}`, { signal: controller.signal });
 			if (abortController !== controller) return;
 			if (res.ok) {
-				results = await res.json();
+				const data = await res.json();
+				if (abortController !== controller) return;
+				results = data;
 			} else {
 				results = [];
 				error = `Search failed (${res.status})`;
