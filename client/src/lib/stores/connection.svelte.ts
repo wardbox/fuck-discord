@@ -1,5 +1,6 @@
 import type { ClientMessage, ServerMessage } from '$lib/protocol/types';
 import { getWsUrl } from '$lib/config';
+import { showMessageNotification } from '$lib/notifications';
 import { auth } from './auth.svelte';
 import { channelStore } from './channels.svelte';
 import { memberStore } from './members.svelte';
@@ -159,6 +160,16 @@ class ConnectionStore {
 				messageStore.addMessage(msg.message);
 				channelStore.trackMessage(msg.message.channel_id, msg.message.id);
 				typingStore.clearTyping(msg.message.channel_id, msg.message.author_id);
+				// Desktop notification (Tauri only, unfocused only)
+				if (msg.message.author_id !== auth.user?.id) {
+					const channel = channelStore.channels.find(c => c.id === msg.message.channel_id);
+					showMessageNotification(
+						channel?.name ?? 'unknown',
+						msg.message.author_username,
+						msg.message.content,
+						msg.message.channel_id
+					);
+				}
 				break;
 
 			case 'message_update':
