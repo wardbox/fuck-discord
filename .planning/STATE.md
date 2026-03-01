@@ -9,28 +9,28 @@ See: .planning/PROJECT.md (updated 2026-02-28)
 
 ## Current Position
 
-Phase: 1 of 5 (Desktop App)
-Plan: 1 of 2 in current phase
-Status: Executing
-Last activity: 2026-03-01 -- Completed 01-01-PLAN.md (Tauri desktop shell)
+Phase: 1 of 5 (Desktop App) -- COMPLETE
+Plan: 2 of 2 in current phase
+Status: Phase Complete
+Last activity: 2026-03-01 -- Completed 01-02-PLAN.md (System tray + native notifications)
 
-Progress: [█████░░░░░] 50%
+Progress: [██████████] 100%
 
 ## Performance Metrics
 
 **Velocity:**
-- Total plans completed: 1
-- Average duration: 13min
-- Total execution time: 0.2 hours
+- Total plans completed: 2
+- Average duration: 19min
+- Total execution time: 0.6 hours
 
 **By Phase:**
 
 | Phase | Plans | Total | Avg/Plan |
 |-------|-------|-------|----------|
-| 01-desktop-app | 1/2 | 13min | 13min |
+| 01-desktop-app | 2/2 | 38min | 19min |
 
 **Recent Trend:**
-- Last 5 plans: 01-01 (13min)
+- Last 5 plans: 01-01 (13min), 01-02 (25min)
 - Trend: -
 
 *Updated after each plan completion*
@@ -49,6 +49,10 @@ Recent decisions affecting current work:
 - [01-01]: All client API calls route through fetchWithAuth() with configurable server URL
 - [01-01]: Server auth supports Authorization: Bearer header (Tauri/mobile) with cookie fallback (browser)
 - [01-01]: Tauri v2 __TAURI_INTERNALS__ for platform detection (not __TAURI__)
+- [01-02]: Notification permission requested lazily on first unfocused message, not on app launch
+- [01-02]: showMessageNotification is fire-and-forget (no await) to never block message processing
+- [01-02]: app.exit(0) is the only way to quit; window close always hides to tray
+- [01-02]: macOS unsigned dev builds silently drop notifications; works in release builds
 
 ### Pending Todos
 
@@ -62,5 +66,5 @@ None yet.
 ## Session Continuity
 
 Last session: 2026-03-01
-Stopped at: Completed 01-01-PLAN.md
+Stopped at: Completed 01-02-PLAN.md -- Phase 1 (Desktop App) complete
 Resume file: None

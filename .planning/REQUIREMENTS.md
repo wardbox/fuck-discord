@@ -10,8 +10,8 @@ Requirements for the next milestone. Each maps to roadmap phases.
 ### Desktop App
 
 - [x] **DESK-01**: Desktop app runs via Tauri v2 with system tray icon
-- [ ] **DESK-02**: App shows native OS notifications for mentions and activity
-- [ ] **DESK-03**: App persists in system tray when window is closed
+- [x] **DESK-02**: App shows native OS notifications for mentions and activity
+- [x] **DESK-03**: App persists in system tray when window is closed
 - [x] **DESK-04**: App connects to a configurable server URL
 
 ### Mobile App
@@ -101,8 +101,8 @@ Which phases cover which requirements. Updated during roadmap creation.
 | Requirement | Phase | Status |
 |-------------|-------|--------|
 | DESK-01 | Phase 1: Desktop App | Complete |
-| DESK-02 | Phase 1: Desktop App | Pending |
-| DESK-03 | Phase 1: Desktop App | Pending |
+| DESK-02 | Phase 1: Desktop App | Complete |
+| DESK-03 | Phase 1: Desktop App | Complete |
 | DESK-04 | Phase 1: Desktop App | Complete |
 | NOTIF-01 | Phase 2: Chat & Awareness | Pending |
 | NOTIF-02 | Phase 2: Chat & Awareness | Pending |
